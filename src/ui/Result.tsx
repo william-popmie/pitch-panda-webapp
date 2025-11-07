@@ -86,6 +86,157 @@ export function Result({ analysis, onReset }: ResultProps) {
         </div>
       </CollapsibleSection>
 
+      {analysis.extra_context && (
+        <CollapsibleSection title="📊 Private Context Data" defaultOpen={false}>
+          <div className="card">
+            <p style={{ fontSize: '0.9em', color: '#666', marginBottom: '1rem' }}>
+              This data was extracted from user-provided confidential information (e.g., pitch
+              decks, internal metrics).
+            </p>
+
+            {/* Factual Metrics Section */}
+            {(analysis.extra_context.founded_year ||
+              analysis.extra_context.mrr ||
+              analysis.extra_context.arr ||
+              analysis.extra_context.funding_stage ||
+              analysis.extra_context.funding_raised) && (
+              <div style={{ marginBottom: '1.5rem' }}>
+                <h3 style={{ color: '#28a745' }}>✓ Factual Metrics</h3>
+                <p style={{ fontSize: '0.85em', color: '#666', marginBottom: '0.5rem' }}>
+                  (Generally trustworthy)
+                </p>
+
+                {analysis.extra_context.founded_year && (
+                  <p>
+                    <strong>Founded:</strong> {analysis.extra_context.founded_year}
+                  </p>
+                )}
+                {analysis.extra_context.mrr && (
+                  <p>
+                    <strong>MRR:</strong> {analysis.extra_context.mrr}
+                  </p>
+                )}
+                {analysis.extra_context.arr && (
+                  <p>
+                    <strong>ARR:</strong> {analysis.extra_context.arr}
+                  </p>
+                )}
+                {analysis.extra_context.funding_stage && (
+                  <p>
+                    <strong>Funding Stage:</strong> {analysis.extra_context.funding_stage}
+                  </p>
+                )}
+                {analysis.extra_context.funding_raised && (
+                  <p>
+                    <strong>Funding Raised:</strong> {analysis.extra_context.funding_raised}
+                  </p>
+                )}
+                {analysis.extra_context.funding_investors &&
+                  analysis.extra_context.funding_investors.length > 0 && (
+                    <p>
+                      <strong>Investors:</strong>{' '}
+                      {analysis.extra_context.funding_investors.join(', ')}
+                    </p>
+                  )}
+                {analysis.extra_context.customer_count && (
+                  <p>
+                    <strong>Customers:</strong> {analysis.extra_context.customer_count}
+                  </p>
+                )}
+                {analysis.extra_context.user_count && (
+                  <p>
+                    <strong>Users:</strong> {analysis.extra_context.user_count}
+                  </p>
+                )}
+                {analysis.extra_context.team_size_claimed && (
+                  <p>
+                    <strong>Team Size:</strong> {analysis.extra_context.team_size_claimed}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Market Claims Section */}
+            {(analysis.extra_context.tam_claimed ||
+              analysis.extra_context.sam_claimed ||
+              analysis.extra_context.som_claimed) && (
+              <div style={{ marginBottom: '1.5rem' }}>
+                <h3 style={{ color: '#ffc107' }}>⚠️ Market Size Claims</h3>
+                <p style={{ fontSize: '0.85em', color: '#666', marginBottom: '0.5rem' }}>
+                  (From pitch materials - may be optimistic)
+                </p>
+
+                {analysis.extra_context.tam_claimed && (
+                  <p>
+                    <strong>TAM (Claimed):</strong> {analysis.extra_context.tam_claimed}
+                  </p>
+                )}
+                {analysis.extra_context.sam_claimed && (
+                  <p>
+                    <strong>SAM (Claimed):</strong> {analysis.extra_context.sam_claimed}
+                  </p>
+                )}
+                {analysis.extra_context.som_claimed && (
+                  <p>
+                    <strong>SOM (Claimed):</strong> {analysis.extra_context.som_claimed}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Competition Claims Section */}
+            {((analysis.extra_context.competition_claims &&
+              analysis.extra_context.competition_claims.length > 0) ||
+              (analysis.extra_context.unique_advantages_claimed &&
+                analysis.extra_context.unique_advantages_claimed.length > 0)) && (
+              <div style={{ marginBottom: '1.5rem' }}>
+                <h3 style={{ color: '#dc3545' }}>🚨 Competition Claims</h3>
+                <p style={{ fontSize: '0.85em', color: '#666', marginBottom: '0.5rem' }}>
+                  (Self-reported - BIASED. Treated with skepticism in analysis.)
+                </p>
+
+                {analysis.extra_context.competition_claims &&
+                  analysis.extra_context.competition_claims.length > 0 && (
+                    <div>
+                      <strong>Company's Claims About Competitors:</strong>
+                      <ul>
+                        {analysis.extra_context.competition_claims.map((claim, i) => (
+                          <li key={i}>{claim}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                {analysis.extra_context.unique_advantages_claimed &&
+                  analysis.extra_context.unique_advantages_claimed.length > 0 && (
+                    <div>
+                      <strong>Claimed Unique Advantages:</strong>
+                      <ul>
+                        {analysis.extra_context.unique_advantages_claimed.map((advantage, i) => (
+                          <li key={i}>{advantage}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+              </div>
+            )}
+
+            {/* Other Notes */}
+            {analysis.extra_context.other_notes &&
+              analysis.extra_context.other_notes.length > 0 && (
+                <div>
+                  <strong>Other Notes:</strong>
+                  <ul>
+                    {analysis.extra_context.other_notes.map((note, i) => (
+                      <li key={i}>{note}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+          </div>
+        </CollapsibleSection>
+      )}
+
       <CollapsibleSection
         title={`🎯 Competition (${analysis.competition.length})`}
         defaultOpen={false}

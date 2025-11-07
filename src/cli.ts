@@ -34,21 +34,27 @@ async function main() {
     console.log(`
 🐼 Pitch Panda CLI
 
-Usage: npm run cli <startup_name> <startup_url>
+Usage: npm run cli <startup_name> <startup_url> [extra_context]
+
+Arguments:
+  startup_name   - Name of the startup to analyze
+  startup_url    - Website URL (with or without https://)
+  extra_context  - (Optional) Additional context like "MRR: $50K, Seed stage, 15 employees"
 
 Example:
   npm run cli "Stripe" "stripe.com"
-  npm run cli "OpenAI" "openai.com"
+  npm run cli "OpenAI" "openai.com" "Series C, $10M ARR, 100 employees"
     `)
     process.exit(1)
   }
 
   const startupName = args[0]
   const startupUrl = args[1]
+  const extraContext = args[2] || '' // Optional third argument
 
   try {
     // Run analysis
-    const analysis = await runAnalysis(startupName, startupUrl)
+    const analysis = await runAnalysis(startupName, startupUrl, extraContext)
 
     // Render markdown
     const markdown = renderMarkdown(startupName, startupUrl, analysis)
@@ -66,6 +72,9 @@ Example:
     console.log(`   Solution: ${analysis.solution.what_it_is}`)
     console.log(`   Sector: ${analysis.sector} / ${analysis.subsector}`)
     console.log(`   Competition: ${analysis.competition.length} competitors found`)
+    if (analysis.extra_context) {
+      console.log(`   Extra Context: Provided and processed`)
+    }
   } catch (error) {
     console.error('❌ Error:', error instanceof Error ? error.message : error)
     process.exit(1)

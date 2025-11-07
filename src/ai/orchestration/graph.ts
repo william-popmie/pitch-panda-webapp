@@ -1,16 +1,46 @@
 // Main analysis graph/pipeline - mimics LangGraph structure
-// Version: 2.0 (Unified CLI + Webapp)
+// Version: 3.0 (With Extra Context Support)
 
-import type { Analysis, AnalysisState, Competitor, Team, Market, Traction } from '../core/schemas'
+import type {
+  Analysis,
+  AnalysisState,
+  Competitor,
+  Team,
+  Market,
+  Traction,
+  ExtraContextData,
+} from '../core/schemas'
 import { fetchWebsiteText } from '../../utils/web'
 import { formatProblemSolutionPrompt } from '../prompts/problem_solution'
 import { formatCompetitionPrompt } from '../prompts/competition'
 import { formatTeamPrompt } from '../prompts/team'
 import { formatMarketPrompt } from '../prompts/market'
 import { formatTractionPrompt } from '../prompts/traction'
+import { formatExtraContextPrompt } from '../prompts/extra_context'
 import { callLLM, parseJSON } from '../core/llm'
 
 // ---------- Nodes ----------
+
+async function extractExtraContextNode(state: AnalysisState): Promise<AnalysisState> {
+  // Only run if extra context was provided
+  if (!state.extra_context_raw || state.extra_context_raw.trim() === '') {
+    console.log(`📝 No extra context provided, skipping extraction`)
+    state.extra_context_parsed = undefined
+    return state
+  }
+
+  console.log(`📝 Extracting structured data from extra context...`)
+
+  const prompt = formatExtraContextPrompt({
+    extra_context: state.extra_context_raw,
+  })
+
+  const response = await callLLM(prompt)
+  const parsed = parseJSON<{ extra_context: ExtraContextData }>(response)
+
+  state.extra_context_parsed = parsed.extra_context
+  return state
+}
 
 async function fetchNode(state: AnalysisState): Promise<AnalysisState> {
   console.log(`📡 Fetching website: ${state.startup_url}`)
@@ -21,14 +51,25 @@ async function fetchNode(state: AnalysisState): Promise<AnalysisState> {
 async function analyzeNode(state: AnalysisState): Promise<AnalysisState> {
   console.log(`🧠 Analyzing problem & solution...`)
 
-  const prompt = formatProblemSolutionPrompt(
-    state.startup_name,
-    state.startup_url,
-    state.website_text
-  )
+  // Prepare extra context data as JSON string if available
+  const extraContextData = state.extra_context_parsed
+    ? JSON.stringify(state.extra_context_parsed, null, 2)
+    : undefined
+
+  const prompt = formatProblemSolutionPrompt({
+    startup_name: state.startup_name,
+    startup_url: state.startup_url,
+    website_text: state.website_text,
+    extra_context_data: extraContextData,
+  })
 
   const response = await callLLM(prompt)
   state.result_json = parseJSON<Partial<Analysis>>(response)
+
+  // Store the parsed extra context in the result
+  if (state.extra_context_parsed) {
+    state.result_json.extra_context = state.extra_context_parsed
+  }
 
   return state
 }
@@ -69,6 +110,19 @@ async function competitionNode(state: AnalysisState): Promise<AnalysisState> {
 
   const analysis = state.result_json as Analysis
 
+  // Prepare extra context focusing on competition claims
+  let extraContextData: string | undefined
+  if (
+    state.extra_context_parsed?.competition_claims ||
+    state.extra_context_parsed?.unique_advantages_claimed
+  ) {
+    const competitionContext = {
+      competition_claims: state.extra_context_parsed.competition_claims || [],
+      unique_advantages_claimed: state.extra_context_parsed.unique_advantages_claimed || [],
+    }
+    extraContextData = JSON.stringify(competitionContext, null, 2)
+  }
+
   const prompt = formatCompetitionPrompt({
     startup_name: state.startup_name,
     startup_url: state.startup_url,
@@ -81,6 +135,7 @@ async function competitionNode(state: AnalysisState): Promise<AnalysisState> {
     sector: analysis.sector,
     subsector: analysis.subsector,
     active_locations: analysis.active_locations.join(', ') || '[]',
+    extra_context_data: extraContextData,
   })
 
   const response = await callLLM(prompt)
@@ -111,6 +166,11 @@ async function teamNode(state: AnalysisState): Promise<AnalysisState> {
 
   const analysis = state.result_json as Analysis
 
+  // Prepare extra context data as JSON string if available
+  const extraContextData = state.extra_context_parsed
+    ? JSON.stringify(state.extra_context_parsed, null, 2)
+    : undefined
+
   const prompt = formatTeamPrompt({
     startup_name: state.startup_name,
     startup_url: state.startup_url,
@@ -119,6 +179,7 @@ async function teamNode(state: AnalysisState): Promise<AnalysisState> {
     problem_general: analysis.problem.general,
     solution_what: analysis.solution.what_it_is,
     website_text: state.website_text,
+    extra_context_data: extraContextData,
   })
 
   const response = await callLLM(prompt)
@@ -144,6 +205,11 @@ async function marketNode(state: AnalysisState): Promise<AnalysisState> {
 
   const analysis = state.result_json as Analysis
 
+  // Prepare extra context data as JSON string if available
+  const extraContextData = state.extra_context_parsed
+    ? JSON.stringify(state.extra_context_parsed, null, 2)
+    : undefined
+
   const prompt = formatMarketPrompt({
     startup_name: state.startup_name,
     startup_url: state.startup_url,
@@ -154,6 +220,7 @@ async function marketNode(state: AnalysisState): Promise<AnalysisState> {
     product_type: analysis.product_type,
     active_locations: analysis.active_locations.join(', ') || 'Unknown',
     website_text: state.website_text,
+    extra_context_data: extraContextData,
   })
 
   const response = await callLLM(prompt)
@@ -181,6 +248,11 @@ async function tractionNode(state: AnalysisState): Promise<AnalysisState> {
 
   const analysis = state.result_json as Analysis
 
+  // Prepare extra context data as JSON string if available
+  const extraContextData = state.extra_context_parsed
+    ? JSON.stringify(state.extra_context_parsed, null, 2)
+    : undefined
+
   const prompt = formatTractionPrompt({
     startup_name: state.startup_name,
     startup_url: state.startup_url,
@@ -190,6 +262,7 @@ async function tractionNode(state: AnalysisState): Promise<AnalysisState> {
     solution_what: analysis.solution.what_it_is,
     product_type: analysis.product_type,
     website_text: state.website_text,
+    extra_context_data: extraContextData,
   })
 
   const response = await callLLM(prompt)
@@ -217,19 +290,32 @@ async function tractionNode(state: AnalysisState): Promise<AnalysisState> {
 
 // ---------- Main Entry ----------
 
-export async function runAnalysis(startupName: string, startupUrl: string): Promise<Analysis> {
+export async function runAnalysis(
+  startupName: string,
+  startupUrl: string,
+  extraContext: string = ''
+): Promise<Analysis> {
   console.log(`\n🐼 Starting analysis for: ${startupName}`)
-  console.log(`📍 Using unified pipeline v2.0\n`)
+  console.log(`📍 Using unified pipeline v3.0`)
+  if (extraContext) {
+    console.log(`📝 Extra context provided (${extraContext.length} chars)\n`)
+  } else {
+    console.log(`📝 No extra context provided\n`)
+  }
 
   const initialState: AnalysisState = {
     startup_name: startupName,
     startup_url: startupUrl,
     website_text: '',
+    extra_context_raw: extraContext,
     result_json: {},
   }
 
   // Run through the graph
   let state = initialState
+
+  // Phase 0: Extract structured data from extra context (if provided)
+  state = await extractExtraContextNode(state)
 
   // Phase 1: Core problem/solution analysis
   state = await fetchNode(state)

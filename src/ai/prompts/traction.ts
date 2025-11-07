@@ -95,9 +95,48 @@ export interface TractionPromptParams {
   solution_what: string
   product_type: string
   website_text: string
+  extra_context_data?: string // Structured JSON string
 }
 
 export function formatTractionPrompt(params: TractionPromptParams): string {
+  let extraContextSection = ''
+
+  if (params.extra_context_data && params.extra_context_data !== '{}') {
+    extraContextSection = `
+
+---
+
+### Additional Private Context (Traction & Metrics)
+
+The user has provided confidential traction data and competitive advantage claims:
+
+${params.extra_context_data}
+
+**How to Use This Data:**
+
+**FACTUAL METRICS (Trust These):**
+- MRR, ARR, customer counts, user counts, retention, churn, LTV, CAC: Treat as accurate
+- Funding amounts, investors, burn rate, runway: Treat as accurate
+- Incorporate these metrics directly into your analysis
+
+**IP & PARTNERSHIPS (Verify if Possible):**
+- Patents, partnerships, LOIs: Generally factual but verify specifics if mentioned
+- Use these in your defensibility analysis
+
+**COMPETITIVE ADVANTAGE CLAIMS (Be Skeptical):**
+- "Unique advantages" and "no competitors" type claims: These are biased
+- Note them, but independently assess the actual defensibility
+- Don't inflate defensibility based solely on self-reported uniqueness
+
+**Your Analysis Should:**
+- Use factual metrics to paint an accurate traction picture
+- Acknowledge claimed advantages but provide balanced assessment
+- In defensibility_summary, be realistic about actual moats vs. marketing claims
+
+---
+`
+  }
+
   return TRACTION_PROMPT.replace('{{startup_name}}', params.startup_name)
     .replace('{{startup_url}}', params.startup_url)
     .replace('{{sector}}', params.sector)
@@ -105,5 +144,5 @@ export function formatTractionPrompt(params: TractionPromptParams): string {
     .replace('{{problem_general}}', params.problem_general)
     .replace('{{solution_what}}', params.solution_what)
     .replace('{{product_type}}', params.product_type)
-    .replace('{{website_text}}', params.website_text.slice(0, 8000)) // Limit text size
+    .replace('{{website_text}}', params.website_text + extraContextSection)
 }

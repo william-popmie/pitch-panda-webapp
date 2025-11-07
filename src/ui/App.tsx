@@ -16,7 +16,11 @@ function App() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const handleAnalyze = async (request: { startup_name: string; startup_url: string }) => {
+  const handleAnalyze = async (request: {
+    startup_name: string
+    startup_url: string
+    extra_context?: string
+  }) => {
     setIsLoading(true)
     setError(null)
 
@@ -38,7 +42,11 @@ function App() {
 
       // Run new analysis
       console.log('🔍 Running new analysis...')
-      const analysisData = await runAnalysis(request.startup_name, request.startup_url)
+      const analysisData = await runAnalysis(
+        request.startup_name,
+        request.startup_url,
+        request.extra_context || ''
+      )
 
       // Save to database
       db.save(request.startup_url, analysisData)

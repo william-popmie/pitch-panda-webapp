@@ -64,6 +64,46 @@ export interface Traction {
   sources: string[]
 }
 
+// Structured data extracted from user-provided extra context (pitch decks, private docs, etc.)
+export interface ExtraContextData {
+  // Factual/Objective Data (generally trustworthy)
+  founded_year?: string // e.g., "2021", "Q3 2020"
+  mrr?: string // Monthly Recurring Revenue, e.g., "$50K MRR"
+  arr?: string // Annual Recurring Revenue, e.g., "$600K ARR"
+  funding_stage?: string // e.g., "Pre-seed", "Seed", "Series A", "Bootstrapped"
+  funding_raised?: string // e.g., "$2M", "€1.5M"
+  funding_investors?: string[] // e.g., ["Y Combinator", "Sequoia Capital"]
+  burn_rate?: string // e.g., "$50K/month"
+  runway?: string // e.g., "18 months"
+  valuation?: string // e.g., "$10M post-money"
+
+  // Market data from pitch materials
+  tam_claimed?: string // TAM claimed by company
+  sam_claimed?: string // SAM claimed by company
+  som_claimed?: string // SOM claimed by company
+
+  // Team data from private docs
+  team_size_claimed?: string // e.g., "15 employees"
+  key_hires?: string[] // Recent important hires mentioned
+
+  // Traction from private metrics
+  customer_count?: string // e.g., "50 paying customers"
+  user_count?: string // e.g., "10K active users"
+  retention_rate?: string // e.g., "90% monthly retention"
+  churn_rate?: string // e.g., "5% monthly churn"
+  ltv?: string // Customer lifetime value
+  cac?: string // Customer acquisition cost
+
+  // Competition claims (BIASED - treat with skepticism)
+  competition_claims?: string[] // What the company says about competitors
+  unique_advantages_claimed?: string[] // What they claim makes them unique
+
+  // Other
+  other_notes?: string[] // Any other relevant information extracted
+
+  sources: string[] // Where this data came from (e.g., "Pitch deck", "Internal metrics")
+}
+
 export interface Analysis {
   problem: Problem
   solution: Solution
@@ -79,6 +119,9 @@ export interface Analysis {
   market?: Market
   traction?: Traction
 
+  // User-provided private context (extracted and structured)
+  extra_context?: ExtraContextData
+
   // Metadata (added when saved to database)
   created_at?: string
   updated_at?: string
@@ -88,5 +131,7 @@ export interface AnalysisState {
   startup_name: string
   startup_url: string
   website_text: string
+  extra_context_raw: string // Raw user-provided context
+  extra_context_parsed?: ExtraContextData // Parsed structured data
   result_json: Partial<Analysis>
 }

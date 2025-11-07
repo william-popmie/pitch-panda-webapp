@@ -76,9 +76,34 @@ export interface MarketPromptParams {
   product_type: string
   active_locations: string
   website_text: string
+  extra_context_data?: string // Structured JSON string
 }
 
 export function formatMarketPrompt(params: MarketPromptParams): string {
+  let extraContextSection = ''
+
+  if (params.extra_context_data && params.extra_context_data !== '{}') {
+    extraContextSection = `
+
+---
+
+### Additional Private Context (Market Data)
+
+The user has provided market size estimates from pitch materials:
+
+${params.extra_context_data}
+
+**IMPORTANT - Use with Caution:**
+- TAM/SAM/SOM from pitch decks are often **optimistic** and designed to impress investors
+- These should be noted and considered, but apply independent judgment
+- If the claimed market sizes seem inflated or unrealistic, note this in your market_size_summary
+- Use extra context as ONE input, not the definitive answer
+- Cross-reference with your knowledge of the sector and realistic market sizing
+
+---
+`
+  }
+
   return MARKET_PROMPT.replace('{{startup_name}}', params.startup_name)
     .replace('{{startup_url}}', params.startup_url)
     .replace('{{sector}}', params.sector)
@@ -87,5 +112,5 @@ export function formatMarketPrompt(params: MarketPromptParams): string {
     .replace('{{solution_what}}', params.solution_what)
     .replace('{{product_type}}', params.product_type)
     .replace('{{active_locations}}', params.active_locations)
-    .replace('{{website_text}}', params.website_text.slice(0, 8000)) // Limit text size
+    .replace('{{website_text}}', params.website_text + extraContextSection)
 }

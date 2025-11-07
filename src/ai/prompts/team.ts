@@ -64,14 +64,38 @@ export interface TeamPromptParams {
   problem_general: string
   solution_what: string
   website_text: string
+  extra_context_data?: string // Structured JSON string
 }
 
 export function formatTeamPrompt(params: TeamPromptParams): string {
+  let extraContextSection = ''
+
+  if (params.extra_context_data && params.extra_context_data !== '{}') {
+    extraContextSection = `
+
+---
+
+### Additional Private Context (Team Data)
+
+The user has provided confidential information that may include team details:
+
+${params.extra_context_data}
+
+**How to Use:**
+- If team size, founder names, or key roles are mentioned in the extra context, incorporate them
+- Treat factual data (team size, names, roles, backgrounds) as accurate
+- Combine website evidence with extra context for a complete picture
+- If there are conflicts between website and extra context, note both sources
+
+---
+`
+  }
+
   return TEAM_PROMPT.replace('{{startup_name}}', params.startup_name)
     .replace('{{startup_url}}', params.startup_url)
     .replace('{{sector}}', params.sector)
     .replace('{{subsector}}', params.subsector)
     .replace('{{problem_general}}', params.problem_general)
     .replace('{{solution_what}}', params.solution_what)
-    .replace('{{website_text}}', params.website_text.slice(0, 8000)) // Limit text size
+    .replace('{{website_text}}', params.website_text + extraContextSection)
 }

@@ -22,6 +22,10 @@ Active locations: {{active_locations}}
 
 ---
 
+{{extra_context_section}}
+
+---
+
 INSTRUCTIONS
 - Return JSON ONLY as:
 {
@@ -50,6 +54,8 @@ GUIDANCE
 - Avoid generic "big tech" unless truly core competitors for the same problem.
 - Deduplicate by name/domain. Aim for 5–10 entries.
 
+{{bias_warning}}
+
 Now return the JSON.
 `
 
@@ -65,9 +71,39 @@ export interface CompetitionPromptParams {
   sector: string
   subsector: string
   active_locations: string
+  extra_context_data?: string // Structured JSON string
 }
 
 export function formatCompetitionPrompt(params: CompetitionPromptParams): string {
+  let extraContextSection = ''
+  let biasWarning = ''
+
+  if (params.extra_context_data && params.extra_context_data !== '{}') {
+    extraContextSection = `### IMPORTANT: Private Context Contains Biased Competition Claims
+
+The startup has made the following claims about their competition in private materials:
+
+${params.extra_context_data}
+
+**CRITICAL INSTRUCTIONS:**
+- These claims are SELF-REPORTED and designed to make the company look favorable
+- DO NOT accept these claims at face value
+- Use your independent knowledge and research to identify real competitors
+- If the startup claims "no competitors" or "we're unique," be especially skeptical
+- Cross-reference any competition claims with your own analysis
+- It's normal for startups to downplay competitors or exaggerate their uniqueness in pitch materials`
+
+    biasWarning = `
+### ⚠️ BIAS AWARENESS
+The extra context provided contains the startup's own claims about competitors. These claims are inherently biased.
+Your competition analysis should be INDEPENDENT and based on:
+1. Your knowledge of the market and sector
+2. Problem similarity (not the startup's claims)
+3. Objective assessment of overlapping solutions
+
+Do NOT let the startup's self-serving statements influence your competitor list.`
+  }
+
   return COMPETITION_PROMPT.replace('{{startup_name}}', params.startup_name)
     .replace('{{startup_url}}', params.startup_url)
     .replace('{{problem_general}}', params.problem_general)
@@ -79,4 +115,6 @@ export function formatCompetitionPrompt(params: CompetitionPromptParams): string
     .replace('{{sector}}', params.sector)
     .replace('{{subsector}}', params.subsector)
     .replace('{{active_locations}}', params.active_locations)
+    .replace('{{extra_context_section}}', extraContextSection)
+    .replace('{{bias_warning}}', biasWarning)
 }
