@@ -1,7 +1,7 @@
-import type { Analysis } from '../types'
+import type { Analysis } from '../ai/core/schemas'
 
 interface ResultProps {
-  analysis: Analysis
+  analysis: Analysis & { startup_name: string; startup_url: string }
   onReset: () => void
 }
 

@@ -2,32 +2,33 @@ import { useState } from 'react'
 import './App.css'
 import { InputForm } from './InputForm'
 import { Result } from './Result'
-import { analyzeStartup } from '../ai/pipeline'
-import { db } from '../data/db'
-import type { Analysis, AnalysisRequest } from '../types'
+import { runAnalysis } from '../ai/orchestration/graph'
+import type { Analysis } from '../ai/core/schemas'
+
+interface AnalysisWithMeta extends Analysis {
+  startup_name: string
+  startup_url: string
+}
 
 function App() {
-  const [currentAnalysis, setCurrentAnalysis] = useState<Analysis | null>(null)
+  const [currentAnalysis, setCurrentAnalysis] = useState<AnalysisWithMeta | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const handleAnalyze = (request: AnalysisRequest) => {
+  const handleAnalyze = async (request: { startup_name: string; startup_url: string }) => {
     setIsLoading(true)
     setError(null)
 
     try {
       // Run analysis
-      const analysisData = analyzeStartup(request)
+      const analysisData = await runAnalysis(request.startup_name, request.startup_url)
 
-      // Create full analysis with id and timestamp
-      const analysis: Analysis = {
+      // Add startup info to analysis
+      const analysis: AnalysisWithMeta = {
         ...analysisData,
-        id: crypto.randomUUID(),
-        created_at: new Date().toISOString(),
+        startup_name: request.startup_name,
+        startup_url: request.startup_url,
       }
-
-      // Save to database
-      db.save(analysis)
 
       // Show result
       setCurrentAnalysis(analysis)
@@ -51,7 +52,7 @@ function App() {
       </header>
 
       <main className="app-main">
-        <InputForm onSubmit={handleAnalyze} isLoading={isLoading} />
+        <InputForm onSubmit={req => void handleAnalyze(req)} isLoading={isLoading} />
 
         {error && (
           <div className="error-message">

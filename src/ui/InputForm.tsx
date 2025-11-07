@@ -1,9 +1,8 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import type { AnalysisRequest } from '../types'
 
 interface InputFormProps {
-  onSubmit: (request: AnalysisRequest) => void
+  onSubmit: (request: { startup_name: string; startup_url: string }) => void
   isLoading: boolean
 }
 
@@ -14,7 +13,7 @@ export function InputForm({ onSubmit, isLoading }: InputFormProps) {
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
     if (startupName.trim() && startupUrl.trim()) {
-      onSubmit({
+      void onSubmit({
         startup_name: startupName.trim(),
         startup_url: startupUrl.trim(),
       })
