@@ -2,7 +2,7 @@
 // Version: 2.0 (Unified CLI + Webapp)
 
 import type { Analysis, AnalysisState, Competitor } from '../core/schemas'
-import { fetchWebsiteText } from '../core/utils'
+import { fetchWebsiteText } from '../../utils/web'
 import { formatProblemSolutionPrompt } from '../prompts/problem_solution'
 import { formatCompetitionPrompt } from '../prompts/competition'
 import { callLLM, parseJSON } from '../core/llm'

@@ -15,7 +15,7 @@ if (!process.env.VITE_OPENAI_API_KEY) {
 // CLI tool for running analysis from command line
 import { runAnalysis } from './ai/orchestration/graph'
 import { renderMarkdown } from './ai/core/renderer'
-import { slugify } from './ai/core/utils'
+import { slugify } from './utils/string'
 import fs from 'fs'
 import path from 'path'
 

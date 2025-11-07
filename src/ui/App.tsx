@@ -3,6 +3,7 @@ import './App.css'
 import { InputForm } from './InputForm'
 import { Result } from './Result'
 import { runAnalysis } from '../ai/orchestration/graph'
+import { db } from '../database/db'
 import type { Analysis } from '../ai/core/schemas'
 
 interface AnalysisWithMeta extends Analysis {
@@ -20,17 +21,35 @@ function App() {
     setError(null)
 
     try {
-      // Run analysis
+      // Check if we already have this analysis in the database
+      const cached = db.getByUrl(request.startup_url)
+
+      if (cached) {
+        console.log('📦 Found cached analysis for', db.getDomain(request.startup_url))
+        const analysis: AnalysisWithMeta = {
+          ...cached,
+          startup_name: request.startup_name,
+          startup_url: request.startup_url,
+        }
+        setCurrentAnalysis(analysis)
+        setIsLoading(false)
+        return
+      }
+
+      // Run new analysis
+      console.log('🔍 Running new analysis...')
       const analysisData = await runAnalysis(request.startup_name, request.startup_url)
 
-      // Add startup info to analysis
+      // Save to database
+      db.save(request.startup_url, analysisData)
+
+      // Add startup info and show result
       const analysis: AnalysisWithMeta = {
         ...analysisData,
         startup_name: request.startup_name,
         startup_url: request.startup_url,
       }
 
-      // Show result
       setCurrentAnalysis(analysis)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to analyze startup')

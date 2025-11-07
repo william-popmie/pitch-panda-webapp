@@ -38,6 +38,9 @@ export interface Analysis {
   active_locations: string[]
   sources: string[]
   competition: Competitor[]
+  // Metadata (added when saved to database)
+  created_at?: string
+  updated_at?: string
 }
 
 export interface AnalysisState {

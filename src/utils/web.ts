@@ -1,4 +1,4 @@
-// Utility functions for fetching websites, slugifying names, etc.
+// Web fetching utilities
 
 const DEFAULT_UA = 'Mozilla/5.0 (PitchPanda/1.0; +https://pitchpanda.local)'
 
@@ -69,20 +69,5 @@ export async function fetchWebsiteText(url: string, maxChars: number = 10000): P
   } catch (error) {
     console.error('Error fetching website:', error)
     return `(Error fetching site: ${error instanceof Error ? error.message : 'Unknown error'})`
-  }
-}
-
-export function slugify(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9_-]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-}
-
-export function hostname(url: string): string {
-  try {
-    return new URL(ensureScheme(url)).hostname
-  } catch {
-    return url
   }
 }
