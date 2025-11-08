@@ -2,7 +2,12 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 
 interface InputFormProps {
-  onSubmit: (request: { startup_name: string; startup_url: string; extra_context?: string }) => void
+  onSubmit: (request: {
+    startup_name: string
+    startup_url: string
+    extra_context?: string
+    images?: File[]
+  }) => void
   isLoading: boolean
 }
 
@@ -10,6 +15,7 @@ export function InputForm({ onSubmit, isLoading }: InputFormProps) {
   const [startupName, setStartupName] = useState('')
   const [startupUrl, setStartupUrl] = useState('')
   const [extraContext, setExtraContext] = useState('')
+  const [images, setImages] = useState<File[]>([])
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
@@ -18,8 +24,21 @@ export function InputForm({ onSubmit, isLoading }: InputFormProps) {
         startup_name: startupName.trim(),
         startup_url: startupUrl.trim(),
         extra_context: extraContext.trim() || undefined,
+        images: images.length > 0 ? images : undefined,
       })
     }
+  }
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (files) {
+      const imageFiles = Array.from(files).filter(file => file.type.startsWith('image/'))
+      setImages(prev => [...prev, ...imageFiles])
+    }
+  }
+
+  const removeImage = (index: number) => {
+    setImages(prev => prev.filter((_, i) => i !== index))
   }
 
   return (
@@ -94,6 +113,101 @@ Example:
         </p>
       </div>
 
+      <div className="form-group">
+        <label htmlFor="image-upload">
+          Upload Images <span style={{ fontWeight: 'normal', fontSize: '0.9em' }}>(Optional)</span>
+        </label>
+        <input
+          id="image-upload"
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={handleImageUpload}
+          disabled={isLoading}
+          style={{ display: 'none' }}
+        />
+        <label
+          htmlFor="image-upload"
+          className="file-upload-label"
+          style={{
+            display: 'inline-block',
+            padding: '0.75rem 1.5rem',
+            backgroundColor: '#f5f5f5',
+            border: '2px dashed #ccc',
+            borderRadius: '8px',
+            cursor: isLoading ? 'not-allowed' : 'pointer',
+            transition: 'all 0.2s',
+            textAlign: 'center',
+            width: '100%',
+            marginBottom: '0.5rem',
+          }}
+        >
+          📎 Click to upload pitch deck slides, charts, or screenshots
+        </label>
+        <p
+          style={{
+            fontSize: '0.85em',
+            color: '#666',
+            marginTop: '0.5rem',
+            fontStyle: 'italic',
+          }}
+        >
+          🖼️ AI will analyze images to extract financial data, team info, market size, and more
+        </p>
+
+        {images.length > 0 && (
+          <div style={{ marginTop: '1rem' }}>
+            <p style={{ fontSize: '0.9em', fontWeight: '600', marginBottom: '0.5rem' }}>
+              Uploaded images ({images.length}):
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {images.map((img, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '0.5rem',
+                    backgroundColor: '#f9f9f9',
+                    borderRadius: '4px',
+                    border: '1px solid #e0e0e0',
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: '0.85em',
+                      flex: 1,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    {img.name}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => removeImage(idx)}
+                    disabled={isLoading}
+                    style={{
+                      backgroundColor: '#ff4444',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      padding: '0.25rem 0.5rem',
+                      fontSize: '0.8em',
+                      cursor: isLoading ? 'not-allowed' : 'pointer',
+                      marginLeft: '0.5rem',
+                    }}
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
       <button type="submit" disabled={isLoading} className="submit-btn">
         {isLoading ? 'Analyzing...' : 'Analyze Startup'}
       </button>
@@ -101,7 +215,11 @@ Example:
       {isLoading && (
         <div className="loading-message">
           <div className="spinner"></div>
-          <p>Fetching website and analyzing with AI...</p>
+          <p>
+            {images.length > 0
+              ? `Analyzing ${images.length} image(s) and fetching website data...`
+              : 'Fetching website and analyzing with AI...'}
+          </p>
         </div>
       )}
     </form>

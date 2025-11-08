@@ -3,6 +3,7 @@ import './App.css'
 import { InputForm } from './InputForm'
 import { Result } from './Result'
 import { runAnalysis } from '../ai/orchestration/graph'
+import { analyzeMultipleImages } from '../ai/vision/image-analyzer'
 import { db } from '../database/db'
 import type { Analysis } from '../ai/core/schemas'
 
@@ -20,11 +21,27 @@ function App() {
     startup_name: string
     startup_url: string
     extra_context?: string
+    images?: File[]
   }) => {
     setIsLoading(true)
     setError(null)
 
     try {
+      // Process images first if any were uploaded
+      let imageContext = ''
+      if (request.images && request.images.length > 0) {
+        console.log(`🖼️  Processing ${request.images.length} image(s)...`)
+        imageContext = await analyzeMultipleImages(request.images)
+      }
+
+      // Combine extra context with image analysis
+      let combinedContext = request.extra_context || ''
+      if (imageContext) {
+        combinedContext = combinedContext
+          ? `${combinedContext}\n\n---\n\n## DATA EXTRACTED FROM IMAGES:\n\n${imageContext}`
+          : `## DATA EXTRACTED FROM IMAGES:\n\n${imageContext}`
+      }
+
       // Check if we already have this analysis in the database
       const cached = db.getByUrl(request.startup_url)
 
@@ -40,12 +57,12 @@ function App() {
         return
       }
 
-      // Run new analysis
+      // Run new analysis with combined context
       console.log('🔍 Running new analysis...')
       const analysisData = await runAnalysis(
         request.startup_name,
         request.startup_url,
-        request.extra_context || ''
+        combinedContext
       )
 
       // Save to database
