@@ -1,8 +1,15 @@
 import { useState } from 'react'
 import type { Analysis } from '../ai/core/schemas'
+import type { ImageAnalysisResult } from '../ai/vision/image-analyzer'
+import { ImageAnalysisResults } from './ImageAnalysisResults'
 
 interface ResultProps {
-  analysis: Analysis & { startup_name: string; startup_url: string }
+  analysis: Analysis & {
+    startup_name: string
+    startup_url: string
+    imageAnalysisResults?: ImageAnalysisResult[]
+    extraContextRaw?: string
+  }
   onReset: () => void
 }
 
@@ -28,6 +35,11 @@ function CollapsibleSection({
 }
 
 export function Result({ analysis, onReset }: ResultProps) {
+  // Prepare extra context data for display
+  const extraContextParsed = analysis.extra_context
+    ? JSON.stringify(analysis.extra_context, null, 2)
+    : undefined
+
   return (
     <div className="result">
       <div className="result-header">
@@ -41,6 +53,16 @@ export function Result({ analysis, onReset }: ResultProps) {
           ← New Analysis
         </button>
       </div>
+
+      {/* Show Image Analysis Results and Extra Context */}
+      {(analysis.imageAnalysisResults?.length || extraContextParsed) && (
+        <CollapsibleSection title="📊 Context Analysis" defaultOpen={true}>
+          <ImageAnalysisResults
+            results={analysis.imageAnalysisResults || []}
+            extraContextParsed={extraContextParsed}
+          />
+        </CollapsibleSection>
+      )}
 
       <CollapsibleSection title="📋 Problem" defaultOpen={true}>
         <div className="card">

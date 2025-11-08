@@ -3,13 +3,16 @@ import './App.css'
 import { InputForm } from './InputForm'
 import { Result } from './Result'
 import { runAnalysis } from '../ai/orchestration/graph'
-import { analyzeMultipleImages } from '../ai/vision/image-analyzer'
+import { analyzeMultipleImages, type ImageAnalysisResult } from '../ai/vision/image-analyzer'
+import { extractNameFromDomain } from '../utils/string'
 import { db } from '../database/db'
 import type { Analysis } from '../ai/core/schemas'
 
 interface AnalysisWithMeta extends Analysis {
   startup_name: string
   startup_url: string
+  imageAnalysisResults?: ImageAnalysisResult[]
+  extraContextRaw?: string
 }
 
 function App() {
@@ -18,7 +21,6 @@ function App() {
   const [error, setError] = useState<string | null>(null)
 
   const handleAnalyze = async (request: {
-    startup_name: string
     startup_url: string
     extra_context?: string
     images?: File[]
@@ -27,11 +29,18 @@ function App() {
     setError(null)
 
     try {
+      // Extract startup name from URL
+      const startupName = extractNameFromDomain(request.startup_url)
+
       // Process images first if any were uploaded
       let imageContext = ''
+      let imageResults: ImageAnalysisResult[] = []
+
       if (request.images && request.images.length > 0) {
         console.log(`🖼️  Processing ${request.images.length} image(s)...`)
-        imageContext = await analyzeMultipleImages(request.images)
+        const { results, combinedText } = await analyzeMultipleImages(request.images)
+        imageResults = results
+        imageContext = combinedText
       }
 
       // Combine extra context with image analysis
@@ -49,8 +58,10 @@ function App() {
         console.log('📦 Found cached analysis for', db.getDomain(request.startup_url))
         const analysis: AnalysisWithMeta = {
           ...cached,
-          startup_name: request.startup_name,
+          startup_name: startupName,
           startup_url: request.startup_url,
+          imageAnalysisResults: imageResults,
+          extraContextRaw: request.extra_context,
         }
         setCurrentAnalysis(analysis)
         setIsLoading(false)
@@ -59,11 +70,7 @@ function App() {
 
       // Run new analysis with combined context
       console.log('🔍 Running new analysis...')
-      const analysisData = await runAnalysis(
-        request.startup_name,
-        request.startup_url,
-        combinedContext
-      )
+      const analysisData = await runAnalysis(startupName, request.startup_url, combinedContext)
 
       // Save to database
       db.save(request.startup_url, analysisData)
@@ -71,8 +78,10 @@ function App() {
       // Add startup info and show result
       const analysis: AnalysisWithMeta = {
         ...analysisData,
-        startup_name: request.startup_name,
+        startup_name: startupName,
         startup_url: request.startup_url,
+        imageAnalysisResults: imageResults,
+        extraContextRaw: request.extra_context,
       }
 
       setCurrentAnalysis(analysis)

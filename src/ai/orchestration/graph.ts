@@ -188,6 +188,7 @@ async function teamNode(state: AnalysisState): Promise<AnalysisState> {
   // Validate and set defaults
   const team: Team = {
     size: parsed.team?.size || 'Unknown',
+    team_members: parsed.team?.team_members || [],
     key_roles: parsed.team?.key_roles || [],
     founders: parsed.team?.founders || [],
     expertise: parsed.team?.expertise || 'Unknown',
@@ -234,6 +235,11 @@ async function marketNode(state: AnalysisState): Promise<AnalysisState> {
     market_size_summary: parsed.market?.market_size_summary || 'Unknown',
     growth_trends: parsed.market?.growth_trends || [],
     target_customers: parsed.market?.target_customers || 'Unknown',
+    // Optional new fields - only include if present
+    industry_investment_size: parsed.market?.industry_investment_size,
+    spend_in_category: parsed.market?.spend_in_category,
+    market_notes: parsed.market?.market_notes,
+    is_claimed_TAM: parsed.market?.is_claimed_TAM,
     sources: parsed.market?.sources || [],
   }
 
@@ -274,6 +280,19 @@ async function tractionNode(state: AnalysisState): Promise<AnalysisState> {
     customers: parsed.traction?.customers || 'Unknown',
     growth_rate: parsed.traction?.growth_rate || 'Unknown',
     key_milestones: parsed.traction?.key_milestones || [],
+    // New detailed revenue fields - optional
+    mrr: parsed.traction?.mrr,
+    arr: parsed.traction?.arr,
+    revenue_growth_rate: parsed.traction?.revenue_growth_rate,
+    // New detailed funding fields - optional
+    funding_raised_total: parsed.traction?.funding_raised_total,
+    funding_rounds: parsed.traction?.funding_rounds,
+    non_dilutive_funding: parsed.traction?.non_dilutive_funding,
+    current_funding_round: parsed.traction?.current_funding_round,
+    target_funding_amount: parsed.traction?.target_funding_amount,
+    loi_count: parsed.traction?.loi_count,
+    loi_value: parsed.traction?.loi_value,
+    // Competitive advantages
     intellectual_property: parsed.traction?.intellectual_property || [],
     partnerships: parsed.traction?.partnerships || [],
     regulatory_moats: parsed.traction?.regulatory_moats || [],

@@ -39,3 +39,28 @@ export function hostname(url: string): string {
     return url
   }
 }
+
+/**
+ * Extract a likely startup name from a URL domain
+ * e.g., "stripe.com" -> "Stripe"
+ * e.g., "www.openai.com" -> "OpenAI"
+ */
+export function extractNameFromDomain(url: string): string {
+  try {
+    // Parse the URL
+    const urlObj = new URL(url.startsWith('http') ? url : `https://${url}`)
+    let domain = urlObj.hostname
+
+    // Remove www. prefix
+    domain = domain.replace(/^www\./, '')
+
+    // Get the main domain name (before first dot)
+    const mainDomain = domain.split('.')[0]
+
+    // Capitalize first letter of each word (handle cases like "openai" -> "OpenAI")
+    return mainDomain.charAt(0).toUpperCase() + mainDomain.slice(1)
+  } catch {
+    // If URL parsing fails, return a fallback
+    return 'Startup'
+  }
+}

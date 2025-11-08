@@ -173,17 +173,27 @@ Return your analysis as structured text that can be added to extra context.`
   }
 }
 
+export interface ImageAnalysisResult {
+  fileName: string
+  fileDataUrl: string // For preview
+  analysis: string
+  error?: string
+}
+
 /**
- * Analyze multiple images and combine their extracted data
+ * Analyze multiple images and return structured results
  */
-export async function analyzeMultipleImages(images: File[]): Promise<string> {
+export async function analyzeMultipleImages(
+  images: File[]
+): Promise<{ results: ImageAnalysisResult[]; combinedText: string }> {
   if (images.length === 0) {
-    return ''
+    return { results: [], combinedText: '' }
   }
 
   console.log(`🖼️  Analyzing ${images.length} image(s) with Vision AI...`)
 
-  const results: string[] = []
+  const results: ImageAnalysisResult[] = []
+  const textResults: string[] = []
 
   for (let i = 0; i < images.length; i++) {
     const image = images[i]
@@ -192,15 +202,31 @@ export async function analyzeMultipleImages(images: File[]): Promise<string> {
     try {
       const base64 = await fileToBase64(image)
       const analysis = await analyzeImage(base64)
-      results.push(`### Image ${i + 1}: ${image.name}\n\n${analysis}`)
+
+      results.push({
+        fileName: image.name,
+        fileDataUrl: base64,
+        analysis,
+      })
+
+      textResults.push(`### Image ${i + 1}: ${image.name}\n\n${analysis}`)
     } catch (error) {
       console.error(`Failed to analyze image ${image.name}:`, error)
-      results.push(`### Image ${i + 1}: ${image.name}\n\nError: Failed to analyze this image`)
+      const errorMsg = error instanceof Error ? error.message : 'Failed to analyze this image'
+
+      results.push({
+        fileName: image.name,
+        fileDataUrl: await fileToBase64(image).catch(() => ''),
+        analysis: '',
+        error: errorMsg,
+      })
+
+      textResults.push(`### Image ${i + 1}: ${image.name}\n\nError: ${errorMsg}`)
     }
   }
 
-  const combined = results.join('\n\n---\n\n')
+  const combinedText = textResults.join('\n\n---\n\n')
   console.log(`✅ Image analysis complete`)
 
-  return combined
+  return { results, combinedText }
 }

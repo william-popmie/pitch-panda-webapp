@@ -15,7 +15,7 @@ if (!process.env.VITE_OPENAI_API_KEY) {
 // CLI tool for running analysis from command line
 import { runAnalysis } from './ai/orchestration/graph'
 import { renderMarkdown } from './ai/core/renderer'
-import { slugify } from './utils/string'
+import { slugify, extractNameFromDomain } from './utils/string'
 import fs from 'fs'
 import path from 'path'
 
@@ -30,29 +30,34 @@ function ensureDir(dirPath: string) {
 async function main() {
   const args = process.argv.slice(2)
 
-  if (args.length < 2) {
+  if (args.length < 1) {
     console.log(`
 🐼 Pitch Panda CLI
 
-Usage: npm run cli <startup_name> <startup_url> [extra_context]
+Usage: npm run cli <startup_url> [extra_context]
 
 Arguments:
-  startup_name   - Name of the startup to analyze
   startup_url    - Website URL (with or without https://)
   extra_context  - (Optional) Additional context like "MRR: $50K, Seed stage, 15 employees"
 
 Example:
-  npm run cli "Stripe" "stripe.com"
-  npm run cli "OpenAI" "openai.com" "Series C, $10M ARR, 100 employees"
+  npm run cli "stripe.com"
+  npm run cli "openai.com" "Series C, $10M ARR, 100 employees"
+
+Note: Startup name is automatically extracted from the URL
     `)
     process.exit(1)
   }
 
-  const startupName = args[0]
-  const startupUrl = args[1]
-  const extraContext = args[2] || '' // Optional third argument
+  const startupUrl = args[0]
+  const extraContext = args[1] || '' // Optional second argument
+
+  // Extract startup name from URL
+  const startupName = extractNameFromDomain(startupUrl)
 
   try {
+    console.log(`🔍 Analyzing ${startupName} (${startupUrl})...`)
+
     // Run analysis
     const analysis = await runAnalysis(startupName, startupUrl, extraContext)
 
@@ -68,6 +73,7 @@ Example:
 
     console.log(`✅ Wrote ${filepath}`)
     console.log(`\n📊 Analysis Summary:`)
+    console.log(`   Name: ${startupName} (auto-extracted)`)
     console.log(`   Problem: ${analysis.problem.general.substring(0, 100)}...`)
     console.log(`   Solution: ${analysis.solution.what_it_is}`)
     console.log(`   Sector: ${analysis.sector} / ${analysis.subsector}`)

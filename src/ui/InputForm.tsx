@@ -1,30 +1,28 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { FormEvent } from 'react'
 
+interface ImagePreview {
+  file: File
+  dataUrl: string
+}
+
 interface InputFormProps {
-  onSubmit: (request: {
-    startup_name: string
-    startup_url: string
-    extra_context?: string
-    images?: File[]
-  }) => void
+  onSubmit: (request: { startup_url: string; extra_context?: string; images?: File[] }) => void
   isLoading: boolean
 }
 
 export function InputForm({ onSubmit, isLoading }: InputFormProps) {
-  const [startupName, setStartupName] = useState('')
   const [startupUrl, setStartupUrl] = useState('')
   const [extraContext, setExtraContext] = useState('')
-  const [images, setImages] = useState<File[]>([])
+  const [imagePreviews, setImagePreviews] = useState<ImagePreview[]>([])
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
-    if (startupName.trim() && startupUrl.trim()) {
+    if (startupUrl.trim()) {
       void onSubmit({
-        startup_name: startupName.trim(),
         startup_url: startupUrl.trim(),
         extra_context: extraContext.trim() || undefined,
-        images: images.length > 0 ? images : undefined,
+        images: imagePreviews.length > 0 ? imagePreviews.map(p => p.file) : undefined,
       })
     }
   }
@@ -33,13 +31,38 @@ export function InputForm({ onSubmit, isLoading }: InputFormProps) {
     const files = e.target.files
     if (files) {
       const imageFiles = Array.from(files).filter(file => file.type.startsWith('image/'))
-      setImages(prev => [...prev, ...imageFiles])
+
+      // Create previews for new images
+      void Promise.all(
+        imageFiles.map(
+          file =>
+            new Promise<ImagePreview>((resolve, reject) => {
+              const reader = new FileReader()
+              reader.onload = () => resolve({ file, dataUrl: reader.result as string })
+              reader.onerror = reject
+              reader.readAsDataURL(file)
+            })
+        )
+      ).then(newPreviews => {
+        setImagePreviews(prev => [...prev, ...newPreviews])
+      })
     }
   }
 
   const removeImage = (index: number) => {
-    setImages(prev => prev.filter((_, i) => i !== index))
+    setImagePreviews(prev => prev.filter((_, i) => i !== index))
   }
+
+  // Cleanup object URLs on unmount
+  useEffect(() => {
+    return () => {
+      imagePreviews.forEach(preview => {
+        if (preview.dataUrl.startsWith('blob:')) {
+          URL.revokeObjectURL(preview.dataUrl)
+        }
+      })
+    }
+  }, [imagePreviews])
 
   return (
     <form onSubmit={handleSubmit} className="input-form">
@@ -47,23 +70,8 @@ export function InputForm({ onSubmit, isLoading }: InputFormProps) {
       <p className="subtitle">Startup Analysis & Competition Research</p>
 
       <div className="form-group">
-        <label htmlFor="startup-name">
-          Startup Name <span className="required">*</span>
-        </label>
-        <input
-          id="startup-name"
-          type="text"
-          value={startupName}
-          onChange={e => setStartupName(e.target.value)}
-          placeholder="e.g., Stripe"
-          disabled={isLoading}
-          required
-        />
-      </div>
-
-      <div className="form-group">
         <label htmlFor="startup-url">
-          Website URL <span className="required">*</span>
+          Startup Website <span className="required">*</span>
         </label>
         <input
           id="startup-url"
@@ -74,6 +82,16 @@ export function InputForm({ onSubmit, isLoading }: InputFormProps) {
           disabled={isLoading}
           required
         />
+        <p
+          style={{
+            fontSize: '0.85em',
+            color: '#666',
+            marginTop: '0.5rem',
+            fontStyle: 'italic',
+          }}
+        >
+          💡 We'll automatically extract the startup name from the website
+        </p>
       </div>
 
       <div className="form-group">
@@ -155,35 +173,52 @@ Example:
           🖼️ AI will analyze images to extract financial data, team info, market size, and more
         </p>
 
-        {images.length > 0 && (
+        {imagePreviews.length > 0 && (
           <div style={{ marginTop: '1rem' }}>
             <p style={{ fontSize: '0.9em', fontWeight: '600', marginBottom: '0.5rem' }}>
-              Uploaded images ({images.length}):
+              Uploaded images ({imagePreviews.length}):
             </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {images.map((img, idx) => (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {imagePreviews.map((preview, idx) => (
                 <div
                   key={idx}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '0.5rem',
+                    gap: '1rem',
+                    padding: '0.75rem',
                     backgroundColor: '#f9f9f9',
-                    borderRadius: '4px',
+                    borderRadius: '8px',
                     border: '1px solid #e0e0e0',
                   }}
                 >
-                  <span
+                  <img
+                    src={preview.dataUrl}
+                    alt={preview.file.name}
                     style={{
-                      fontSize: '0.85em',
-                      flex: 1,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
+                      width: '80px',
+                      height: '80px',
+                      objectFit: 'cover',
+                      borderRadius: '4px',
+                      border: '1px solid #ddd',
                     }}
-                  >
-                    {img.name}
-                  </span>
+                  />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontSize: '0.85em',
+                        fontWeight: '500',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {preview.file.name}
+                    </div>
+                    <div style={{ fontSize: '0.75em', color: '#666', marginTop: '0.25rem' }}>
+                      {(preview.file.size / 1024).toFixed(1)} KB
+                    </div>
+                  </div>
                   <button
                     type="button"
                     onClick={() => removeImage(idx)}
@@ -193,10 +228,10 @@ Example:
                       color: 'white',
                       border: 'none',
                       borderRadius: '4px',
-                      padding: '0.25rem 0.5rem',
+                      padding: '0.5rem 0.75rem',
                       fontSize: '0.8em',
                       cursor: isLoading ? 'not-allowed' : 'pointer',
-                      marginLeft: '0.5rem',
+                      whiteSpace: 'nowrap',
                     }}
                   >
                     Remove
@@ -216,8 +251,8 @@ Example:
         <div className="loading-message">
           <div className="spinner"></div>
           <p>
-            {images.length > 0
-              ? `Analyzing ${images.length} image(s) and fetching website data...`
+            {imagePreviews.length > 0
+              ? `Analyzing ${imagePreviews.length} image(s) and fetching website data...`
               : 'Fetching website and analyzing with AI...'}
           </p>
         </div>
