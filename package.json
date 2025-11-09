@@ -11,11 +11,19 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,scss,md}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css,scss,md}\"",
     "preview": "vite preview",
-    "cli": "tsx src/cli.ts"
+    "cli": "tsx src/cli.ts",
+    "test:integration": "tsx src/test-integration.ts"
   },
   "dependencies": {
+    "@langchain/core": "^0.3.29",
+    "@langchain/langgraph": "^0.2.28",
+    "@langchain/openai": "^0.6.11",
+    "pdf-lib": "^1.17.1",
+    "pdf-parse": "^1.1.1",
+    "pdfjs-dist": "^4.10.38",
     "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "react-dom": "^19.1.1",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",

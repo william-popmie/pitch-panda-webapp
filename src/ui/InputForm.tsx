@@ -1,73 +1,89 @@
 import { useState, useEffect } from 'react'
 import type { FormEvent } from 'react'
 
-interface ImagePreview {
+interface FilePreview {
   file: File
   dataUrl: string
+  type: 'image' | 'pdf'
 }
 
 interface InputFormProps {
-  onSubmit: (request: { startup_url: string; extra_context?: string; images?: File[] }) => void
+  onSubmit: (request: { url: string; deckFiles: File[] }) => void
   isLoading: boolean
+  progress?: number
+  currentStage?: string
 }
 
-export function InputForm({ onSubmit, isLoading }: InputFormProps) {
-  const [startupUrl, setStartupUrl] = useState('')
-  const [extraContext, setExtraContext] = useState('')
-  const [imagePreviews, setImagePreviews] = useState<ImagePreview[]>([])
+export function InputForm({ onSubmit, isLoading, progress, currentStage }: InputFormProps) {
+  const [url, setUrl] = useState('')
+  const [filePreviews, setFilePreviews] = useState<FilePreview[]>([])
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
-    if (startupUrl.trim()) {
+    if (url.trim()) {
       void onSubmit({
-        startup_url: startupUrl.trim(),
-        extra_context: extraContext.trim() || undefined,
-        images: imagePreviews.length > 0 ? imagePreviews.map(p => p.file) : undefined,
+        url: url.trim(),
+        deckFiles: filePreviews.map(p => p.file),
       })
     }
   }
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (files) {
-      const imageFiles = Array.from(files).filter(file => file.type.startsWith('image/'))
+      const validFiles = Array.from(files).filter(
+        file => file.type.startsWith('image/') || file.type === 'application/pdf'
+      )
 
-      // Create previews for new images
+      // Create previews for new files
       void Promise.all(
-        imageFiles.map(
+        validFiles.map(
           file =>
-            new Promise<ImagePreview>((resolve, reject) => {
-              const reader = new FileReader()
-              reader.onload = () => resolve({ file, dataUrl: reader.result as string })
-              reader.onerror = reject
-              reader.readAsDataURL(file)
+            new Promise<FilePreview>((resolve, reject) => {
+              const fileType = file.type === 'application/pdf' ? 'pdf' : 'image'
+
+              if (fileType === 'pdf') {
+                // For PDFs, use a generic PDF icon/placeholder
+                resolve({
+                  file,
+                  dataUrl: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg"/>',
+                  type: 'pdf',
+                })
+              } else {
+                // For images, create a preview
+                const reader = new FileReader()
+                reader.onload = () =>
+                  resolve({ file, dataUrl: reader.result as string, type: 'image' })
+                reader.onerror = reject
+                reader.readAsDataURL(file)
+              }
             })
         )
       ).then(newPreviews => {
-        setImagePreviews(prev => [...prev, ...newPreviews])
+        setFilePreviews(prev => [...prev, ...newPreviews])
       })
     }
   }
 
-  const removeImage = (index: number) => {
-    setImagePreviews(prev => prev.filter((_, i) => i !== index))
+  const removeFile = (index: number) => {
+    setFilePreviews(prev => prev.filter((_, i) => i !== index))
   }
 
   // Cleanup object URLs on unmount
   useEffect(() => {
     return () => {
-      imagePreviews.forEach(preview => {
-        if (preview.dataUrl.startsWith('blob:')) {
+      filePreviews.forEach(preview => {
+        if (preview.type === 'image' && preview.dataUrl.startsWith('blob:')) {
           URL.revokeObjectURL(preview.dataUrl)
         }
       })
     }
-  }, [imagePreviews])
+  }, [filePreviews])
 
   return (
     <form onSubmit={handleSubmit} className="input-form">
       <h1>🐼 Pitch Panda</h1>
-      <p className="subtitle">Startup Analysis & Competition Research</p>
+      <p className="subtitle">VC-Grade Startup Analysis with Multimodal AI</p>
 
       <div className="form-group">
         <label htmlFor="startup-url">
@@ -76,9 +92,9 @@ export function InputForm({ onSubmit, isLoading }: InputFormProps) {
         <input
           id="startup-url"
           type="url"
-          value={startupUrl}
-          onChange={e => setStartupUrl(e.target.value)}
-          placeholder="e.g., stripe.com or https://stripe.com"
+          value={url}
+          onChange={e => setUrl(e.target.value)}
+          placeholder="e.g., https://stripe.com"
           disabled={isLoading}
           required
         />
@@ -90,62 +106,40 @@ export function InputForm({ onSubmit, isLoading }: InputFormProps) {
             fontStyle: 'italic',
           }}
         >
-          💡 We'll automatically extract the startup name from the website
+          💡 We'll analyze the website content to understand the startup
         </p>
-      </div>
-
-      <div className="form-group">
-        <label htmlFor="extra-context">
-          Extra Context <span style={{ fontWeight: 'normal', fontSize: '0.9em' }}>(Optional)</span>
-        </label>
-        <textarea
-          id="extra-context"
-          value={extraContext}
-          onChange={e => setExtraContext(e.target.value)}
-          placeholder={`Provide additional confidential information not publicly available:
-
-• Financial metrics: MRR, ARR, burn rate, runway, valuation
-• Funding: Stage, amount raised, investors
-• Traction: Customer count, retention rate, growth rate
-• Team: Size, key hires, founder backgrounds
-• Market data: TAM/SAM/SOM estimates from pitch deck
-• IP & advantages: Patents, partnerships, LOIs
-• Competition insights: What they claim about competitors
-
-Example:
-"Raised $2M seed from Acme Ventures. Currently at $50K MRR with 80 paying customers. 15-person team. Founded Q2 2021. Claim to be only platform with real-time processing in this space."`}
-          rows={6}
-          disabled={isLoading}
-          style={{ resize: 'vertical', minHeight: '120px' }}
-        />
         <p
           style={{
-            fontSize: '0.85em',
-            color: '#666',
-            marginTop: '0.5rem',
-            fontStyle: 'italic',
+            fontSize: '0.8em',
+            color: '#e67e22',
+            marginTop: '0.25rem',
+            padding: '0.5rem',
+            backgroundColor: '#fff3e0',
+            borderRadius: '4px',
+            border: '1px solid #ffe0b2',
           }}
         >
-          💡 This helps us extract metrics from pitch decks or private documents. Competition claims
-          will be treated skeptically.
+          ⚠️ <strong>CORS Note:</strong> Some websites may block browser requests. If website
+          analysis fails, we'll use the pitch deck only. For production, consider using a backend
+          scraping service.
         </p>
       </div>
 
       <div className="form-group">
-        <label htmlFor="image-upload">
-          Upload Images <span style={{ fontWeight: 'normal', fontSize: '0.9em' }}>(Optional)</span>
+        <label htmlFor="file-upload">
+          Pitch Deck <span style={{ fontWeight: 'normal', fontSize: '0.9em' }}>(Optional)</span>
         </label>
         <input
-          id="image-upload"
+          id="file-upload"
           type="file"
-          accept="image/*"
+          accept="image/*,.pdf"
           multiple
-          onChange={handleImageUpload}
+          onChange={handleFileUpload}
           disabled={isLoading}
           style={{ display: 'none' }}
         />
         <label
-          htmlFor="image-upload"
+          htmlFor="file-upload"
           className="file-upload-label"
           style={{
             display: 'inline-block',
@@ -160,7 +154,7 @@ Example:
             marginBottom: '0.5rem',
           }}
         >
-          📎 Click to upload pitch deck slides, charts, or screenshots
+          📎 Upload pitch deck (PDF or images)
         </label>
         <p
           style={{
@@ -170,16 +164,16 @@ Example:
             fontStyle: 'italic',
           }}
         >
-          🖼️ AI will analyze images to extract financial data, team info, market size, and more
+          🖼️ Vision AI will analyze slides to extract charts, metrics, team info, and more
         </p>
 
-        {imagePreviews.length > 0 && (
+        {filePreviews.length > 0 && (
           <div style={{ marginTop: '1rem' }}>
             <p style={{ fontSize: '0.9em', fontWeight: '600', marginBottom: '0.5rem' }}>
-              Uploaded images ({imagePreviews.length}):
+              Uploaded files ({filePreviews.length}):
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {imagePreviews.map((preview, idx) => (
+              {filePreviews.map((preview, idx) => (
                 <div
                   key={idx}
                   style={{
@@ -192,17 +186,35 @@ Example:
                     border: '1px solid #e0e0e0',
                   }}
                 >
-                  <img
-                    src={preview.dataUrl}
-                    alt={preview.file.name}
-                    style={{
-                      width: '80px',
-                      height: '80px',
-                      objectFit: 'cover',
-                      borderRadius: '4px',
-                      border: '1px solid #ddd',
-                    }}
-                  />
+                  {preview.type === 'image' ? (
+                    <img
+                      src={preview.dataUrl}
+                      alt={preview.file.name}
+                      style={{
+                        width: '80px',
+                        height: '80px',
+                        objectFit: 'cover',
+                        borderRadius: '4px',
+                        border: '1px solid #ddd',
+                      }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: '80px',
+                        height: '80px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: '#e74c3c',
+                        borderRadius: '4px',
+                        color: 'white',
+                        fontSize: '2em',
+                      }}
+                    >
+                      📄
+                    </div>
+                  )}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div
                       style={{
@@ -216,12 +228,12 @@ Example:
                       {preview.file.name}
                     </div>
                     <div style={{ fontSize: '0.75em', color: '#666', marginTop: '0.25rem' }}>
-                      {(preview.file.size / 1024).toFixed(1)} KB
+                      {(preview.file.size / 1024).toFixed(1)} KB • {preview.type.toUpperCase()}
                     </div>
                   </div>
                   <button
                     type="button"
-                    onClick={() => removeImage(idx)}
+                    onClick={() => removeFile(idx)}
                     disabled={isLoading}
                     style={{
                       backgroundColor: '#ff4444',
@@ -250,11 +262,36 @@ Example:
       {isLoading && (
         <div className="loading-message">
           <div className="spinner"></div>
-          <p>
-            {imagePreviews.length > 0
-              ? `Analyzing ${imagePreviews.length} image(s) and fetching website data...`
-              : 'Fetching website and analyzing with AI...'}
-          </p>
+          <div>
+            {currentStage && (
+              <p style={{ fontWeight: '600', marginBottom: '0.5rem' }}>{currentStage}</p>
+            )}
+            {progress !== undefined && (
+              <div style={{ marginTop: '1rem' }}>
+                <div
+                  style={{
+                    width: '100%',
+                    height: '8px',
+                    backgroundColor: '#e0e0e0',
+                    borderRadius: '4px',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: `${progress}%`,
+                      height: '100%',
+                      backgroundColor: '#4CAF50',
+                      transition: 'width 0.3s ease',
+                    }}
+                  />
+                </div>
+                <p style={{ fontSize: '0.85em', marginTop: '0.5rem', color: '#666' }}>
+                  {progress}% complete
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </form>

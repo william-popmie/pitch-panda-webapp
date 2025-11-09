@@ -1,15 +1,10 @@
 import { useState } from 'react'
-import type { Analysis } from '../ai/core/schemas'
-import type { ImageAnalysisResult } from '../ai/vision/image-analyzer'
-import { ImageAnalysisResults } from './ImageAnalysisResults'
+import type { StartupAnalysis } from '../analysis'
 
 interface ResultProps {
-  analysis: Analysis & {
-    startup_name: string
-    startup_url: string
-    imageAnalysisResults?: ImageAnalysisResult[]
-    extraContextRaw?: string
-  }
+  analysis: StartupAnalysis
+  memo: string
+  url: string
   onReset: () => void
 }
 
@@ -34,19 +29,16 @@ function CollapsibleSection({
   )
 }
 
-export function Result({ analysis, onReset }: ResultProps) {
-  // Prepare extra context data for display
-  const extraContextParsed = analysis.extra_context
-    ? JSON.stringify(analysis.extra_context, null, 2)
-    : undefined
+export function Result({ analysis, memo, url, onReset }: ResultProps) {
+  const [activeTab, setActiveTab] = useState<'structured' | 'memo'>('structured')
 
   return (
     <div className="result">
       <div className="result-header">
         <div>
-          <h1>{analysis.startup_name}</h1>
-          <a href={analysis.startup_url} target="_blank" rel="noopener noreferrer">
-            {analysis.startup_url} →
+          <h1>{analysis.startup_id}</h1>
+          <a href={url} target="_blank" rel="noopener noreferrer">
+            {url} →
           </a>
         </div>
         <button onClick={onReset} className="reset-btn">
@@ -54,475 +46,427 @@ export function Result({ analysis, onReset }: ResultProps) {
         </button>
       </div>
 
-      {/* Show Image Analysis Results and Extra Context */}
-      {(analysis.imageAnalysisResults?.length || extraContextParsed) && (
-        <CollapsibleSection title="📊 Context Analysis" defaultOpen={true}>
-          <ImageAnalysisResults
-            results={analysis.imageAnalysisResults || []}
-            extraContextParsed={extraContextParsed}
+      {/* Tab Navigation */}
+      <div
+        style={{
+          display: 'flex',
+          gap: '1rem',
+          borderBottom: '2px solid #e0e0e0',
+          marginBottom: '2rem',
+        }}
+      >
+        <button
+          onClick={() => setActiveTab('structured')}
+          style={{
+            padding: '0.75rem 1.5rem',
+            border: 'none',
+            backgroundColor: 'transparent',
+            borderBottom:
+              activeTab === 'structured' ? '3px solid #4CAF50' : '3px solid transparent',
+            fontWeight: activeTab === 'structured' ? '600' : '400',
+            cursor: 'pointer',
+            fontSize: '1em',
+          }}
+        >
+          📊 Structured Analysis
+        </button>
+        <button
+          onClick={() => setActiveTab('memo')}
+          style={{
+            padding: '0.75rem 1.5rem',
+            border: 'none',
+            backgroundColor: 'transparent',
+            borderBottom: activeTab === 'memo' ? '3px solid #4CAF50' : '3px solid transparent',
+            fontWeight: activeTab === 'memo' ? '600' : '400',
+            cursor: 'pointer',
+            fontSize: '1em',
+          }}
+        >
+          📝 Investment Memo
+        </button>
+      </div>
+
+      {/* Memo Tab */}
+      {activeTab === 'memo' && (
+        <div className="memo-container">
+          <div
+            className="markdown-content"
+            style={{
+              backgroundColor: '#fff',
+              padding: '2rem',
+              borderRadius: '8px',
+              border: '1px solid #e0e0e0',
+              lineHeight: '1.6',
+              maxWidth: '800px',
+              margin: '0 auto',
+            }}
+            dangerouslySetInnerHTML={{ __html: memo.replace(/\n/g, '<br/>') }}
           />
-        </CollapsibleSection>
+        </div>
       )}
 
-      <CollapsibleSection title="📋 Problem" defaultOpen={true}>
-        <div className="card">
-          <p>
-            <strong>General:</strong> {analysis.problem.general}
-          </p>
-          <p>
-            <strong>Example:</strong> {analysis.problem.example}
-          </p>
-        </div>
-      </CollapsibleSection>
+      {/* Structured Analysis Tab */}
+      {activeTab === 'structured' && (
+        <>
+          <CollapsibleSection title="🎯 Problem" defaultOpen={true}>
+            <div className="card">
+              <h3>{analysis.problem.one_liner}</h3>
+              <p>{analysis.problem.details}</p>
 
-      <CollapsibleSection title="💡 Solution" defaultOpen={true}>
-        <div className="card">
-          <p>
-            <strong>Product:</strong> {analysis.solution.what_it_is}
-          </p>
-          <p>
-            <strong>How it works:</strong> {analysis.solution.how_it_works}
-          </p>
-          <p>
-            <strong>Example:</strong> {analysis.solution.example}
-          </p>
-        </div>
-      </CollapsibleSection>
-
-      <CollapsibleSection title="🏢 Overview" defaultOpen={true}>
-        <div className="card">
-          <p>
-            <strong>Product Type:</strong> {analysis.product_type}
-          </p>
-          <p>
-            <strong>Sector:</strong> {analysis.sector}
-          </p>
-          <p>
-            <strong>Subsector:</strong> {analysis.subsector}
-          </p>
-          {analysis.active_locations.length > 0 && (
-            <p>
-              <strong>Active Locations:</strong> {analysis.active_locations.join(', ')}
-            </p>
-          )}
-        </div>
-      </CollapsibleSection>
-
-      {analysis.extra_context && (
-        <CollapsibleSection title="📊 Private Context Data" defaultOpen={false}>
-          <div className="card">
-            <p style={{ fontSize: '0.9em', color: '#666', marginBottom: '1rem' }}>
-              This data was extracted from user-provided confidential information (e.g., pitch
-              decks, internal metrics).
-            </p>
-
-            {/* Factual Metrics Section */}
-            {(analysis.extra_context.founded_year ||
-              analysis.extra_context.mrr ||
-              analysis.extra_context.arr ||
-              analysis.extra_context.funding_stage ||
-              analysis.extra_context.funding_raised) && (
-              <div style={{ marginBottom: '1.5rem' }}>
-                <h3 style={{ color: '#28a745' }}>✓ Factual Metrics</h3>
-                <p style={{ fontSize: '0.85em', color: '#666', marginBottom: '0.5rem' }}>
-                  (Generally trustworthy)
-                </p>
-
-                {analysis.extra_context.founded_year && (
-                  <p>
-                    <strong>Founded:</strong> {analysis.extra_context.founded_year}
-                  </p>
-                )}
-                {analysis.extra_context.mrr && (
-                  <p>
-                    <strong>MRR:</strong> {analysis.extra_context.mrr}
-                  </p>
-                )}
-                {analysis.extra_context.arr && (
-                  <p>
-                    <strong>ARR:</strong> {analysis.extra_context.arr}
-                  </p>
-                )}
-                {analysis.extra_context.funding_stage && (
-                  <p>
-                    <strong>Funding Stage:</strong> {analysis.extra_context.funding_stage}
-                  </p>
-                )}
-                {analysis.extra_context.funding_raised && (
-                  <p>
-                    <strong>Funding Raised:</strong> {analysis.extra_context.funding_raised}
-                  </p>
-                )}
-                {analysis.extra_context.funding_investors &&
-                  analysis.extra_context.funding_investors.length > 0 && (
-                    <p>
-                      <strong>Investors:</strong>{' '}
-                      {analysis.extra_context.funding_investors.join(', ')}
-                    </p>
-                  )}
-                {analysis.extra_context.customer_count && (
-                  <p>
-                    <strong>Customers:</strong> {analysis.extra_context.customer_count}
-                  </p>
-                )}
-                {analysis.extra_context.user_count && (
-                  <p>
-                    <strong>Users:</strong> {analysis.extra_context.user_count}
-                  </p>
-                )}
-                {analysis.extra_context.team_size_claimed && (
-                  <p>
-                    <strong>Team Size:</strong> {analysis.extra_context.team_size_claimed}
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* Market Claims Section */}
-            {(analysis.extra_context.tam_claimed ||
-              analysis.extra_context.sam_claimed ||
-              analysis.extra_context.som_claimed) && (
-              <div style={{ marginBottom: '1.5rem' }}>
-                <h3 style={{ color: '#ffc107' }}>⚠️ Market Size Claims</h3>
-                <p style={{ fontSize: '0.85em', color: '#666', marginBottom: '0.5rem' }}>
-                  (From pitch materials - may be optimistic)
-                </p>
-
-                {analysis.extra_context.tam_claimed && (
-                  <p>
-                    <strong>TAM (Claimed):</strong> {analysis.extra_context.tam_claimed}
-                  </p>
-                )}
-                {analysis.extra_context.sam_claimed && (
-                  <p>
-                    <strong>SAM (Claimed):</strong> {analysis.extra_context.sam_claimed}
-                  </p>
-                )}
-                {analysis.extra_context.som_claimed && (
-                  <p>
-                    <strong>SOM (Claimed):</strong> {analysis.extra_context.som_claimed}
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* Competition Claims Section */}
-            {((analysis.extra_context.competition_claims &&
-              analysis.extra_context.competition_claims.length > 0) ||
-              (analysis.extra_context.unique_advantages_claimed &&
-                analysis.extra_context.unique_advantages_claimed.length > 0)) && (
-              <div style={{ marginBottom: '1.5rem' }}>
-                <h3 style={{ color: '#dc3545' }}>🚨 Competition Claims</h3>
-                <p style={{ fontSize: '0.85em', color: '#666', marginBottom: '0.5rem' }}>
-                  (Self-reported - BIASED. Treated with skepticism in analysis.)
-                </p>
-
-                {analysis.extra_context.competition_claims &&
-                  analysis.extra_context.competition_claims.length > 0 && (
-                    <div>
-                      <strong>Company's Claims About Competitors:</strong>
-                      <ul>
-                        {analysis.extra_context.competition_claims.map((claim, i) => (
-                          <li key={i}>{claim}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                {analysis.extra_context.unique_advantages_claimed &&
-                  analysis.extra_context.unique_advantages_claimed.length > 0 && (
-                    <div>
-                      <strong>Claimed Unique Advantages:</strong>
-                      <ul>
-                        {analysis.extra_context.unique_advantages_claimed.map((advantage, i) => (
-                          <li key={i}>{advantage}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-              </div>
-            )}
-
-            {/* Other Notes */}
-            {analysis.extra_context.other_notes &&
-              analysis.extra_context.other_notes.length > 0 && (
+              {analysis.problem.pain_points.length > 0 && (
                 <div>
-                  <strong>Other Notes:</strong>
+                  <strong>Pain Points:</strong>
                   <ul>
-                    {analysis.extra_context.other_notes.map((note, i) => (
-                      <li key={i}>{note}</li>
+                    {analysis.problem.pain_points.map((point, i) => (
+                      <li key={i}>{point}</li>
                     ))}
                   </ul>
                 </div>
               )}
-          </div>
-        </CollapsibleSection>
-      )}
 
-      <CollapsibleSection
-        title={`🎯 Competition (${analysis.competition.length})`}
-        defaultOpen={false}
-      >
-        {analysis.competition.length === 0 ? (
-          <div className="card">
-            <p>No competitors found.</p>
-          </div>
-        ) : (
-          <div className="competitors">
-            {analysis.competition.map((comp, idx) => (
-              <div key={idx} className="competitor-card">
-                <h3>
-                  {comp.name}
-                  {comp.website && (
-                    <>
-                      {' '}
-                      <a href={comp.website} target="_blank" rel="noopener noreferrer">
-                        →
-                      </a>
-                    </>
-                  )}
-                </h3>
+              <p>
+                <strong>Target Users:</strong> {analysis.problem.target_users}
+              </p>
+            </div>
+          </CollapsibleSection>
 
-                {comp.product_type && (
-                  <p className="meta">
-                    {comp.product_type} • {comp.sector || 'Unknown sector'}
+          <CollapsibleSection title="💡 Solution" defaultOpen={true}>
+            <div className="card">
+              <h3>{analysis.solution.one_liner}</h3>
+              <p>{analysis.solution.details}</p>
+
+              {analysis.solution.features.length > 0 && (
+                <div>
+                  <strong>Key Features:</strong>
+                  <ul>
+                    {analysis.solution.features.map((feature, i) => (
+                      <li key={i}>{feature}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </CollapsibleSection>
+
+          {analysis.value_proposition && (
+            <CollapsibleSection title="✨ Value Proposition" defaultOpen={true}>
+              <div className="card">
+                <h3>Value Delivered</h3>
+                <p>{analysis.value_proposition.summary}</p>
+
+                {analysis.value_proposition.key_benefits.length > 0 && (
+                  <div>
+                    <strong>Key Benefits:</strong>
+                    <ul>
+                      {analysis.value_proposition.key_benefits.map((benefit, i) => (
+                        <li key={i}>{benefit}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </CollapsibleSection>
+          )}
+
+          {analysis.team && (
+            <CollapsibleSection title="👥 Team" defaultOpen={false}>
+              <div className="card">
+                {analysis.team.members.length > 0 ? (
+                  <div style={{ display: 'grid', gap: '1rem' }}>
+                    {analysis.team.members.map((member, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          padding: '1rem',
+                          backgroundColor: '#f9f9f9',
+                          borderRadius: '8px',
+                          border: '1px solid #e0e0e0',
+                        }}
+                      >
+                        <h4 style={{ margin: '0 0 0.5rem 0' }}>
+                          {member.name}
+                          {member.role && (
+                            <span style={{ fontWeight: 'normal', color: '#666' }}>
+                              {' '}
+                              • {member.role}
+                            </span>
+                          )}
+                        </h4>
+                        {member.background && (
+                          <p style={{ margin: '0.25rem 0' }}>{member.background}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p>No team information available.</p>
+                )}
+
+                {analysis.team.collective_expertise && (
+                  <div style={{ marginTop: '1.5rem' }}>
+                    <strong>Collective Expertise:</strong>
+                    <p>{analysis.team.collective_expertise}</p>
+                  </div>
+                )}
+              </div>
+            </CollapsibleSection>
+          )}
+
+          {analysis.traction && (
+            <CollapsibleSection title="📈 Traction" defaultOpen={false}>
+              <div className="card">
+                {analysis.traction.metrics.length > 0 ? (
+                  <div>
+                    <strong>Key Metrics:</strong>
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                        gap: '1rem',
+                        marginTop: '1rem',
+                      }}
+                    >
+                      {analysis.traction.metrics.map((metric, i) => (
+                        <div
+                          key={i}
+                          style={{
+                            padding: '1rem',
+                            backgroundColor: '#f0f8ff',
+                            borderRadius: '8px',
+                            border: '1px solid #4CAF50',
+                          }}
+                        >
+                          <div
+                            style={{ fontSize: '0.85em', color: '#666', marginBottom: '0.25rem' }}
+                          >
+                            {metric.metric}
+                          </div>
+                          <div style={{ fontSize: '1.5em', fontWeight: '600', color: '#4CAF50' }}>
+                            {metric.value}
+                          </div>
+                          {metric.timeframe && (
+                            <div style={{ fontSize: '0.8em', color: '#888', marginTop: '0.25rem' }}>
+                              {metric.timeframe}
+                            </div>
+                          )}
+                          {metric.trend && (
+                            <div style={{ fontSize: '0.8em', color: '#888', marginTop: '0.25rem' }}>
+                              ↗️ {metric.trend}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <p>No traction metrics available.</p>
+                )}
+
+                {analysis.traction.partnerships.length > 0 && (
+                  <div style={{ marginTop: '1.5rem' }}>
+                    <strong>Partnerships:</strong>
+                    <ul>
+                      {analysis.traction.partnerships.map((partnership, i) => (
+                        <li key={i}>
+                          <strong>{partnership.name}</strong> ({partnership.type})
+                          {partnership.details && ` - ${partnership.details}`}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {analysis.traction.milestones.length > 0 && (
+                  <div style={{ marginTop: '1.5rem' }}>
+                    <strong>Milestones:</strong>
+                    <ul>
+                      {analysis.traction.milestones.map((milestone, i) => (
+                        <li key={i}>{milestone}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </CollapsibleSection>
+          )}
+
+          {analysis.competition && analysis.competition.competitors.length > 0 && (
+            <CollapsibleSection
+              title={`🎯 Competition (${analysis.competition.competitors.length})`}
+              defaultOpen={false}
+            >
+              <div className="card">
+                <p>
+                  <strong>Market Positioning:</strong> {analysis.competition.positioning}
+                </p>
+                {analysis.competition.notes && (
+                  <p style={{ marginTop: '1rem', fontStyle: 'italic' }}>
+                    {analysis.competition.notes}
+                  </p>
+                )}
+              </div>
+
+              <div style={{ display: 'grid', gap: '1rem', marginTop: '1rem' }}>
+                {analysis.competition.competitors.map((comp, i) => (
+                  <div
+                    key={i}
+                    className="card"
+                    style={{
+                      backgroundColor: '#fff',
+                      border: '1px solid #e0e0e0',
+                    }}
+                  >
+                    <h3>{comp.name}</h3>
+
+                    {comp.description && <p>{comp.description}</p>}
+
+                    {comp.differentiation && (
+                      <p style={{ marginTop: '1rem', fontStyle: 'italic' }}>
+                        <strong>Differentiation:</strong> {comp.differentiation}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CollapsibleSection>
+          )}
+
+          {analysis.funding && (
+            <CollapsibleSection title="💰 Funding" defaultOpen={false}>
+              <div className="card">
+                <p>
+                  <strong>Status:</strong> {analysis.funding.status}
+                </p>
+                {analysis.funding.total_raised && (
+                  <p>
+                    <strong>Total Raised:</strong> {analysis.funding.total_raised}
+                  </p>
+                )}
+                {analysis.funding.notes && (
+                  <p>
+                    <strong>Notes:</strong> {analysis.funding.notes}
                   </p>
                 )}
 
-                <p>
-                  <strong>Problem Similarity:</strong> {comp.problem_similarity}
-                </p>
-
-                <p>
-                  <strong>Solution:</strong> {comp.solution_summary}
-                </p>
-
-                {comp.similarities.length > 0 && (
+                {analysis.funding.rounds.length > 0 && (
                   <div>
-                    <strong>Similarities:</strong>
+                    <strong>Funding Rounds:</strong>
                     <ul>
-                      {comp.similarities.map((sim, i) => (
-                        <li key={i}>{sim}</li>
+                      {analysis.funding.rounds.map((round, i) => (
+                        <li key={i}>
+                          <strong>{round.type}</strong> ({round.status})
+                          {round.amount && ` - ${round.amount}`}
+                          {round.date && ` (${round.date})`}
+                          {round.investors &&
+                            round.investors.length > 0 &&
+                            ` • ${round.investors.join(', ')}`}
+                        </li>
                       ))}
                     </ul>
                   </div>
                 )}
+              </div>
+            </CollapsibleSection>
+          )}
 
-                {comp.differences.length > 0 && (
-                  <div>
-                    <strong>Differences:</strong>
-                    <ul>
-                      {comp.differences.map((diff, i) => (
-                        <li key={i}>{diff}</li>
-                      ))}
-                    </ul>
+          {analysis.business_model && (
+            <CollapsibleSection title="💼 Business Model" defaultOpen={false}>
+              <div className="card">
+                {analysis.business_model.summary && <p>{analysis.business_model.summary}</p>}
+
+                {analysis.business_model.monetization &&
+                  analysis.business_model.monetization.length > 0 && (
+                    <div>
+                      <strong>Monetization:</strong>
+                      <ul>
+                        {analysis.business_model.monetization.map((stream, i) => (
+                          <li key={i}>{stream}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                {analysis.business_model.pricing && (
+                  <p>
+                    <strong>Pricing:</strong> {analysis.business_model.pricing}
+                  </p>
+                )}
+              </div>
+            </CollapsibleSection>
+          )}
+
+          {analysis.risks && analysis.risks.length > 0 && (
+            <CollapsibleSection title={`⚠️ Risks (${analysis.risks.length})`} defaultOpen={false}>
+              <div style={{ display: 'grid', gap: '1rem' }}>
+                {analysis.risks.map((risk, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      padding: '1rem',
+                      backgroundColor:
+                        risk.severity === 'high'
+                          ? '#fff5f5'
+                          : risk.severity === 'medium'
+                            ? '#fffbf0'
+                            : '#f0f0f0',
+                      borderLeft: `4px solid ${risk.severity === 'high' ? '#e74c3c' : risk.severity === 'medium' ? '#f39c12' : '#95a5a6'}`,
+                      borderRadius: '4px',
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-start',
+                      }}
+                    >
+                      <h4 style={{ margin: '0 0 0.5rem 0' }}>{risk.category}</h4>
+                      <span
+                        style={{
+                          fontSize: '0.75em',
+                          padding: '2px 8px',
+                          borderRadius: '12px',
+                          backgroundColor:
+                            risk.severity === 'high'
+                              ? '#e74c3c'
+                              : risk.severity === 'medium'
+                                ? '#f39c12'
+                                : '#95a5a6',
+                          color: 'white',
+                          fontWeight: '600',
+                        }}
+                      >
+                        {risk.severity?.toUpperCase() || 'UNKNOWN'}
+                      </span>
+                    </div>
+                    <p style={{ margin: 0 }}>{risk.description}</p>
                   </div>
-                )}
-
-                {comp.active_locations.length > 0 && (
-                  <p className="meta">📍 {comp.active_locations.join(', ')}</p>
-                )}
+                ))}
               </div>
-            ))}
-          </div>
-        )}
-      </CollapsibleSection>
+            </CollapsibleSection>
+          )}
 
-      {analysis.team && (
-        <CollapsibleSection title="👥 Team" defaultOpen={false}>
-          <div className="card">
-            <p>
-              <strong>Size:</strong> {analysis.team.size}
-            </p>
-
-            {analysis.team.founders.length > 0 && (
-              <div>
-                <strong>Founders:</strong>
+          {analysis.missing_info && analysis.missing_info.length > 0 && (
+            <CollapsibleSection title="❓ Missing Information" defaultOpen={false}>
+              <div className="card">
                 <ul>
-                  {analysis.team.founders.map((founder, i) => (
-                    <li key={i}>{founder}</li>
+                  {analysis.missing_info.map((info, i) => (
+                    <li key={i}>{info}</li>
                   ))}
                 </ul>
               </div>
-            )}
+            </CollapsibleSection>
+          )}
 
-            {analysis.team.key_roles.length > 0 && (
-              <div>
-                <strong>Key Roles:</strong>
-                <ul>
-                  {analysis.team.key_roles.map((role, i) => (
-                    <li key={i}>{role}</li>
-                  ))}
-                </ul>
+          {analysis.evidence_summary && (
+            <CollapsibleSection title="📋 Evidence Summary" defaultOpen={false}>
+              <div className="card">
+                <p style={{ whiteSpace: 'pre-wrap' }}>{analysis.evidence_summary}</p>
               </div>
-            )}
-
-            {analysis.team.expertise !== 'Unknown' && (
-              <p>
-                <strong>Expertise:</strong> {analysis.team.expertise}
-              </p>
-            )}
-          </div>
-        </CollapsibleSection>
+            </CollapsibleSection>
+          )}
+        </>
       )}
-
-      {analysis.market && (
-        <CollapsibleSection title="📊 Market Opportunity" defaultOpen={false}>
-          <div className="card">
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(3, 1fr)',
-                gap: '1rem',
-                marginBottom: '1rem',
-              }}
-            >
-              <div>
-                <p>
-                  <strong>TAM:</strong> {analysis.market.tam}
-                </p>
-              </div>
-              <div>
-                <p>
-                  <strong>SAM:</strong> {analysis.market.sam}
-                </p>
-              </div>
-              <div>
-                <p>
-                  <strong>SOM:</strong> {analysis.market.som}
-                </p>
-              </div>
-            </div>
-
-            {analysis.market.market_size_summary !== 'Unknown' && (
-              <p>
-                <strong>Market Summary:</strong> {analysis.market.market_size_summary}
-              </p>
-            )}
-
-            {analysis.market.target_customers !== 'Unknown' && (
-              <p>
-                <strong>Target Customers:</strong> {analysis.market.target_customers}
-              </p>
-            )}
-
-            {analysis.market.growth_trends.length > 0 && (
-              <div>
-                <strong>Growth Trends:</strong>
-                <ul>
-                  {analysis.market.growth_trends.map((trend, i) => (
-                    <li key={i}>{trend}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        </CollapsibleSection>
-      )}
-
-      {analysis.traction && (
-        <CollapsibleSection title="🚀 Traction & Competitive Advantages" defaultOpen={false}>
-          <div className="card">
-            <h3>Traction Metrics</h3>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(3, 1fr)',
-                gap: '1rem',
-                marginBottom: '1rem',
-              }}
-            >
-              <div>
-                <p>
-                  <strong>Revenue:</strong> {analysis.traction.revenue}
-                </p>
-              </div>
-              <div>
-                <p>
-                  <strong>Customers:</strong> {analysis.traction.customers}
-                </p>
-              </div>
-              <div>
-                <p>
-                  <strong>Growth Rate:</strong> {analysis.traction.growth_rate}
-                </p>
-              </div>
-            </div>
-
-            {analysis.traction.key_milestones.length > 0 && (
-              <div style={{ marginBottom: '1rem' }}>
-                <strong>Key Milestones:</strong>
-                <ul>
-                  {analysis.traction.key_milestones.map((milestone, i) => (
-                    <li key={i}>{milestone}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            <h3 style={{ marginTop: '1.5rem' }}>Competitive Advantages</h3>
-
-            {analysis.traction.intellectual_property.length > 0 && (
-              <div>
-                <strong>Intellectual Property:</strong>
-                <ul>
-                  {analysis.traction.intellectual_property.map((ip, i) => (
-                    <li key={i}>{ip}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {analysis.traction.partnerships.length > 0 && (
-              <div>
-                <strong>Partnerships:</strong>
-                <ul>
-                  {analysis.traction.partnerships.map((partnership, i) => (
-                    <li key={i}>{partnership}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {analysis.traction.regulatory_moats.length > 0 && (
-              <div>
-                <strong>Regulatory Moats:</strong>
-                <ul>
-                  {analysis.traction.regulatory_moats.map((moat, i) => (
-                    <li key={i}>{moat}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {analysis.traction.network_effects !== 'Unknown' && (
-              <p>
-                <strong>Network Effects:</strong> {analysis.traction.network_effects}
-              </p>
-            )}
-
-            {analysis.traction.defensibility_summary !== 'Unknown' && (
-              <p style={{ marginTop: '1rem', fontStyle: 'italic' }}>
-                <strong>Defensibility Summary:</strong> {analysis.traction.defensibility_summary}
-              </p>
-            )}
-          </div>
-        </CollapsibleSection>
-      )}
-
-      <CollapsibleSection title="🔗 Sources" defaultOpen={false}>
-        <div className="card">
-          <ul>
-            {analysis.sources.map((source, idx) => (
-              <li key={idx}>
-                <a href={source} target="_blank" rel="noopener noreferrer">
-                  {source}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </CollapsibleSection>
     </div>
   )
 }
