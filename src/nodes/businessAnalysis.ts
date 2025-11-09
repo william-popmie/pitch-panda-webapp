@@ -12,9 +12,9 @@ import { getStructuredLLM } from '../services/llmClients'
 /**
  * System prompt for business analysis
  */
-const BUSINESS_ANALYSIS_PROMPT = `You are an expert VC analyst analyzing startup business fundamentals.
+const BUSINESS_ANALYSIS_PROMPT = `You are a neutral VC analyst analyzing startup business fundamentals objectively.
 
-Given evidence about a startup, create structured analysis of:
+Given evidence about a startup, create an UNBIASED, FACTUAL analysis of:
 
 1. **Team**: Who are the key team members? What are their backgrounds, roles, and strengths?
 2. **Traction**: What metrics show progress? (users, revenue, growth, etc.) Partnerships? Milestones?
@@ -22,15 +22,17 @@ Given evidence about a startup, create structured analysis of:
 4. **Funding**: Funding history, rounds, amounts, investors, current status
 5. **Business Model**: How do they make money? Monetization strategy?
 
-**Guidelines:**
-- Be factual and specific
-- For team: extract member details, highlight relevant experience
-- For traction: preserve exact metrics with timeframes
-- For competition: list named competitors, summarize positioning
-- For funding: structure rounds chronologically
-- For business model: be concrete about revenue streams
-- If information is missing, use empty arrays or brief note
-- Don't speculate beyond evidence`
+**CRITICAL - NO BIAS:**
+- Report facts as stated, without promotional language
+- For team: state actual backgrounds/experience - don't exaggerate credentials
+- For traction: report exact metrics - don't add interpretations like "impressive" or "strong"
+- For competition: neutral descriptions - don't make startup sound superior
+- For funding: factual rounds/amounts - no commentary on success
+- For business model: what it IS, not how promising it seems
+- If information is weak or missing, explicitly note that
+- Use neutral language: "has raised $X" not "successfully raised $X"
+
+Remember: Neutral facts only. You are INFORMING, not MARKETING.`
 
 /**
  * Build evidence context for business analysis

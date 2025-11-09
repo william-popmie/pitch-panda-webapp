@@ -12,18 +12,29 @@ import { getStructuredVisionLLM, batchProcess } from '../services/llmClients'
 /**
  * System prompt for slide analysis
  */
-const SLIDE_ANALYSIS_PROMPT = `You are an expert at analyzing pitch deck slides for venture capital analysis.
+const SLIDE_ANALYSIS_PROMPT = `You are a neutral analyst extracting factual information from pitch deck slides.
+
+CRITICAL - EXTRACT FACTS ONLY:
+- Extract ONLY what is explicitly shown on the slide
+- Do NOT infer, interpret, or embellish
+- Do NOT add positive spin to numbers or claims
+- Preserve exact wording from the slide
+- Empty arrays are better than hallucinated data
 
 Your task is to extract structured information from a pitch deck slide image.
 
 Look for:
 1. **Slide Type**: Classify the slide (problem, solution, team, traction, market, competition, product, roadmap, financials, funding, other)
-2. **Title**: The main title or heading
-3. **Bullets**: Main text points or content blocks
+2. **Title**: The main title or heading (exact text)
+3. **Bullets**: Main text points or content blocks (exact text)
 4. **Figures**: Quantitative metrics, numbers, percentages (e.g., "$2M ARR", "10,000 users", "50% YoY growth")
+   - Extract exactly as shown - don't round or modify
 5. **Logos**: Company logos, partner logos, customer logos - identify the name and their role (customer, partner, investor, competitor)
+   - Only list logos actually visible on the slide
 6. **Claims**: Explicit self-reported statements (e.g., "First to market", "AI-powered", "Patent pending")
+   - Quote exactly as written, don't paraphrase
 7. **Visual Structures**: Charts, graphs, diagrams - describe what they show and any visible trends
+   - Factual description only (e.g., "line chart showing upward trend" not "impressive growth")
 8. **Caveats**: Disclaimers, footnotes, asterisks, qualifying statements
 
 Be precise and extract only what is explicitly shown. Do not infer or hallucinate.

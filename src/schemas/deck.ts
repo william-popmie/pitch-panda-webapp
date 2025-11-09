@@ -29,7 +29,7 @@ export type SlideType = z.infer<typeof SlideType>
  */
 export const FigureSchema = z.object({
   label: z.string().describe('Label or description of the metric'),
-  value: z.union([z.number(), z.string()]).describe('Numeric or string value'),
+  value: z.string().describe('Value as string (e.g., "1000", "$2M", "50%")'),
   unit: z.string().nullable().describe('Unit of measurement (e.g., "$", "%", "users")'),
 })
 
@@ -87,7 +87,7 @@ export type Slide = z.infer<typeof SlideSchema>
 export const SlideImageSchema = z.object({
   page: z.number().int().positive(),
   imageDataUrl: z.string().describe('Base64 data URL of the slide image'),
-  fileName: z.string().optional().describe('Original filename if available'),
+  fileName: z.string().nullable().optional().describe('Original filename if available'),
 })
 
 export type SlideImage = z.infer<typeof SlideImageSchema>

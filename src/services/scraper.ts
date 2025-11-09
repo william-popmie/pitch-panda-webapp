@@ -24,6 +24,8 @@ export async function scrapeWebsite(url: string): Promise<{
 
     // Try direct fetch first (works for CORS-enabled sites)
     let response: Response
+    let usedProxy = false
+
     try {
       response = await fetch(normalizedUrl, {
         mode: 'cors',
@@ -31,11 +33,19 @@ export async function scrapeWebsite(url: string): Promise<{
           'User-Agent': 'Mozilla/5.0 (compatible; PitchPanda/1.0)',
         },
       })
-    } catch (corsError) {
+    } catch {
       // CORS blocked - try with proxy
-      console.warn('Direct fetch blocked by CORS, trying proxy...', corsError)
-      const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(normalizedUrl)}`
-      response = await fetch(proxyUrl)
+      console.warn(`[Scraper] Direct fetch blocked by CORS for ${normalizedUrl}, trying proxy...`)
+      try {
+        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(normalizedUrl)}`
+        response = await fetch(proxyUrl)
+        usedProxy = true
+      } catch {
+        console.warn(
+          `[Scraper] Proxy also failed for ${normalizedUrl}. Continuing with deck-only analysis.`
+        )
+        throw new Error('Both direct fetch and proxy failed due to CORS restrictions')
+      }
     }
 
     if (!response.ok) {
@@ -47,9 +57,19 @@ export async function scrapeWebsite(url: string): Promise<{
     // Extract text chunks from HTML
     const chunks = extractTextChunks(html)
 
+    if (usedProxy) {
+      console.log(`[Scraper] Successfully fetched ${normalizedUrl} via proxy`)
+    } else {
+      console.log(`[Scraper] Successfully fetched ${normalizedUrl} directly`)
+    }
+
     return { html, chunks }
   } catch (error) {
-    console.error('Error scraping website:', error)
+    const errorMsg = error instanceof Error ? error.message : String(error)
+    console.warn(
+      `[Scraper] Website scraping failed: ${errorMsg}. Analysis will continue using pitch deck only.`
+    )
+
     // Return empty chunks instead of throwing - allow analysis to continue with deck only
     return {
       html: '',

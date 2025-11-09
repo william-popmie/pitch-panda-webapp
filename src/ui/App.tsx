@@ -13,6 +13,7 @@ interface AnalysisState {
   url: string
   isLoading: boolean
   error: string | null
+  warnings: string[]
   progress: number
   currentStage: string
 }
@@ -24,6 +25,7 @@ function App() {
     url: '',
     isLoading: false,
     error: null,
+    warnings: [],
     progress: 0,
     currentStage: '',
   })
@@ -49,11 +51,17 @@ function App() {
         deck_slides: deckSlides,
       })) {
         if (update.stage === 'complete') {
-          // Final result
+          // Final result - capture any warnings from the pipeline
+          const warnings =
+            update.state.errors?.filter(
+              err => err.includes('CORS') || err.includes('scraping blocked')
+            ) || []
+
           setState(prev => ({
             ...prev,
             analysis: update.state.final_analysis || null,
             memo: update.state.memo || null,
+            warnings: warnings,
             isLoading: false,
             progress: 100,
             currentStage: 'Analysis complete!',
@@ -83,6 +91,7 @@ function App() {
       url: '',
       isLoading: false,
       error: null,
+      warnings: [],
       progress: 0,
       currentStage: '',
     })
@@ -138,6 +147,27 @@ function App() {
               >
                 Try Again
               </button>
+            </div>
+          )}
+
+          {state.warnings.length > 0 && !state.isLoading && (
+            <div
+              style={{
+                padding: '1rem',
+                backgroundColor: '#fff3e0',
+                border: '1px solid #ffe0b2',
+                borderRadius: '8px',
+                margin: '1rem 0',
+              }}
+            >
+              <strong style={{ color: '#e67e22' }}>⚠️ Warnings:</strong>
+              <ul style={{ margin: '0.5rem 0 0 0', paddingLeft: '1.5rem' }}>
+                {state.warnings.map((warning, i) => (
+                  <li key={i} style={{ color: '#666', fontSize: '0.9em' }}>
+                    {warning}
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
 

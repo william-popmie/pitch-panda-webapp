@@ -10,9 +10,9 @@ import { z } from 'zod'
  */
 export const ProvenanceSchema = z.object({
   kind: z.enum(['deck_slide', 'website']).describe('Source type'),
-  page: z.number().optional().describe('Slide page number if from deck'),
-  location: z.string().optional().describe('URL path or section if from website'),
-  snippet: z.string().optional().describe('Verbatim snippet from source'),
+  page: z.number().nullable().optional().describe('Slide page number if from deck'),
+  location: z.string().nullable().optional().describe('URL path or section if from website'),
+  snippet: z.string().nullable().optional().describe('Verbatim snippet from source'),
 })
 
 export type Provenance = z.infer<typeof ProvenanceSchema>
@@ -31,10 +31,10 @@ export type EvidenceItem = z.infer<typeof EvidenceItemSchema>
  * Funding fact with structured data
  */
 export const FundingFactSchema = z.object({
-  round_type: z.string().optional().describe('e.g., Seed, Series A'),
-  amount: z.string().optional().describe('e.g., $2M'),
-  investors: z.array(z.string()).optional().describe('List of investor names'),
-  date: z.string().optional().describe('Date or timeframe'),
+  round_type: z.string().nullable().optional().describe('e.g., Seed, Series A'),
+  amount: z.string().nullable().optional().describe('e.g., $2M'),
+  investors: z.array(z.string()).nullable().optional().describe('List of investor names'),
+  date: z.string().nullable().optional().describe('Date or timeframe'),
   source: ProvenanceSchema.describe('Where this fact came from'),
 })
 
@@ -45,9 +45,9 @@ export type FundingFact = z.infer<typeof FundingFactSchema>
  */
 export const TractionFactSchema = z.object({
   metric_type: z.string().describe('Type of metric: revenue, users, customers, growth_rate, etc.'),
-  value: z.union([z.string(), z.number()]).describe('Metric value'),
-  timeframe: z.string().optional().describe('When this metric was measured'),
-  context: z.string().optional().describe('Additional context'),
+  value: z.string().describe('Metric value as string (e.g., "1000 users", "$50K MRR")'),
+  timeframe: z.string().nullable().optional().describe('When this metric was measured'),
+  context: z.string().nullable().optional().describe('Additional context'),
   source: ProvenanceSchema.describe('Where this fact came from'),
 })
 
@@ -58,8 +58,8 @@ export type TractionFact = z.infer<typeof TractionFactSchema>
  */
 export const TeamFactSchema = z.object({
   name: z.string().describe('Team member name'),
-  role: z.string().optional().describe('Current role'),
-  background: z.string().optional().describe('Past experience, education'),
+  role: z.string().nullable().optional().describe('Current role'),
+  background: z.string().nullable().optional().describe('Past experience, education'),
   source: ProvenanceSchema.describe('Where this info came from'),
 })
 

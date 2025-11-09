@@ -14,7 +14,11 @@ export const RiskItemSchema = z.object({
       'Risk category: market, team, competition, technology, business_model, execution, regulatory, etc.'
     ),
   description: z.string().describe('Description of the risk'),
-  severity: z.enum(['low', 'medium', 'high', 'critical']).optional().describe('Assessed severity'),
+  severity: z
+    .enum(['low', 'medium', 'high', 'critical'])
+    .nullable()
+    .optional()
+    .describe('Assessed severity'),
 })
 
 export type RiskItem = z.infer<typeof RiskItemSchema>

@@ -53,7 +53,11 @@ export const StartupAnalysisSchema = z.object({
   missing_info: z.array(z.string()),
 
   // Metadata
-  evidence_summary: z.string().optional().describe('High-level summary of evidence quality'),
+  evidence_summary: z
+    .string()
+    .nullable()
+    .optional()
+    .describe('High-level summary of evidence quality'),
   analyzed_at: z.string().describe('ISO timestamp of analysis'),
 })
 

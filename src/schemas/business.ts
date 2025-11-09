@@ -10,7 +10,7 @@ import { z } from 'zod'
 export const TeamMemberSchema = z.object({
   name: z.string().describe('Full name'),
   role: z.string().describe('Current role at the startup'),
-  background: z.string().optional().describe('Past experience, education, achievements'),
+  background: z.string().nullable().optional().describe('Past experience, education, achievements'),
   strengths: z.array(z.string()).describe('Key strengths or expertise areas'),
   source_ids: z.array(z.string()).describe('References to evidence sources'),
 })
@@ -21,10 +21,11 @@ export type TeamMember = z.infer<typeof TeamMemberSchema>
  * Team analysis
  */
 export const TeamSchema = z.object({
-  size: z.string().optional().describe('Team size (e.g., "10-50 employees")'),
+  size: z.string().nullable().optional().describe('Team size (e.g., "10-50 employees")'),
   members: z.array(TeamMemberSchema).describe('Individual team members identified'),
   collective_expertise: z
     .string()
+    .nullable()
     .optional()
     .describe("Summary of team's collective domain expertise"),
 })
@@ -36,9 +37,9 @@ export type Team = z.infer<typeof TeamSchema>
  */
 export const TractionMetricSchema = z.object({
   metric: z.string().describe('Metric name (e.g., MRR, users, customers)'),
-  value: z.union([z.string(), z.number()]).describe('Current value'),
-  trend: z.string().optional().describe('Growth trend or trajectory'),
-  timeframe: z.string().optional().describe('When measured'),
+  value: z.string().describe('Current value as string (e.g., "1000", "$50K", "50%")'),
+  trend: z.string().nullable().optional().describe('Growth trend or trajectory'),
+  timeframe: z.string().nullable().optional().describe('When measured'),
 })
 
 export type TractionMetric = z.infer<typeof TractionMetricSchema>
@@ -49,7 +50,7 @@ export type TractionMetric = z.infer<typeof TractionMetricSchema>
 export const PartnershipSchema = z.object({
   name: z.string().describe('Partner or customer name'),
   type: z.string().describe('Type: customer, partner, LOI, pilot, integration, distribution, etc.'),
-  details: z.string().optional().describe('Additional details'),
+  details: z.string().nullable().optional().describe('Additional details'),
 })
 
 export type Partnership = z.infer<typeof PartnershipSchema>
@@ -70,9 +71,10 @@ export type Traction = z.infer<typeof TractionSchema>
  */
 export const CompetitorSchema = z.object({
   name: z.string().describe('Competitor name'),
-  description: z.string().optional().describe('Brief description of what they do'),
+  description: z.string().nullable().optional().describe('Brief description of what they do'),
   differentiation: z
     .string()
+    .nullable()
     .optional()
     .describe('How the startup differentiates from this competitor'),
 })
@@ -85,7 +87,7 @@ export type Competitor = z.infer<typeof CompetitorSchema>
 export const CompetitionSchema = z.object({
   competitors: z.array(CompetitorSchema).describe('Identified competitors'),
   positioning: z.string().describe('How the startup positions itself vs competition'),
-  notes: z.string().optional().describe('Additional competitive landscape notes'),
+  notes: z.string().nullable().optional().describe('Additional competitive landscape notes'),
 })
 
 export type Competition = z.infer<typeof CompetitionSchema>
@@ -95,9 +97,9 @@ export type Competition = z.infer<typeof CompetitionSchema>
  */
 export const FundingRoundSchema = z.object({
   type: z.string().describe('Round type: pre-seed, seed, Series A, etc.'),
-  amount: z.string().optional().describe('Amount raised (e.g., "$2M")'),
-  investors: z.array(z.string()).optional().describe('Investor names'),
-  date: z.string().optional().describe('Date or timeframe'),
+  amount: z.string().nullable().optional().describe('Amount raised (e.g., "$2M")'),
+  investors: z.array(z.string()).nullable().optional().describe('Investor names'),
+  date: z.string().nullable().optional().describe('Date or timeframe'),
   status: z.string().describe('Status: completed, ongoing, target'),
 })
 
@@ -108,9 +110,9 @@ export type FundingRound = z.infer<typeof FundingRoundSchema>
  */
 export const FundingSchema = z.object({
   rounds: z.array(FundingRoundSchema).describe('Funding rounds'),
-  total_raised: z.string().optional().describe('Total amount raised to date'),
+  total_raised: z.string().nullable().optional().describe('Total amount raised to date'),
   status: z.string().describe('Current fundraising status'),
-  notes: z.string().optional().describe('Additional funding-related notes'),
+  notes: z.string().nullable().optional().describe('Additional funding-related notes'),
 })
 
 export type Funding = z.infer<typeof FundingSchema>
@@ -124,7 +126,7 @@ export const BusinessModelSchema = z.object({
     .array(z.string())
     .nullable()
     .describe('Revenue streams or monetization strategies'),
-  pricing: z.string().optional().describe('Pricing model if mentioned'),
+  pricing: z.string().nullable().optional().describe('Pricing model if mentioned'),
 })
 
 export type BusinessModel = z.infer<typeof BusinessModelSchema>

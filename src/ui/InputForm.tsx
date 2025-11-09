@@ -106,22 +106,7 @@ export function InputForm({ onSubmit, isLoading, progress, currentStage }: Input
             fontStyle: 'italic',
           }}
         >
-          💡 We'll analyze the website content to understand the startup
-        </p>
-        <p
-          style={{
-            fontSize: '0.8em',
-            color: '#e67e22',
-            marginTop: '0.25rem',
-            padding: '0.5rem',
-            backgroundColor: '#fff3e0',
-            borderRadius: '4px',
-            border: '1px solid #ffe0b2',
-          }}
-        >
-          ⚠️ <strong>CORS Note:</strong> Some websites may block browser requests. If website
-          analysis fails, we'll use the pitch deck only. For production, consider using a backend
-          scraping service.
+          🤖 We'll use AI to research the website and extract startup information
         </p>
       </div>
 

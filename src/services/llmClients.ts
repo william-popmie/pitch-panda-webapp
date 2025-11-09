@@ -35,7 +35,7 @@ export function getTextLLM(config: LLMConfig = {}): ChatOpenAI {
   }
 
   return new ChatOpenAI({
-    model: config.model || 'gpt-4-turbo-preview',
+    model: config.model || 'gpt-4o', // Current stable model
     temperature: config.temperature ?? 0.1,
     maxTokens: config.maxTokens,
     apiKey: apiKey,
@@ -64,7 +64,7 @@ export function getVisionLLM(config: LLMConfig = {}): ChatOpenAI {
   }
 
   return new ChatOpenAI({
-    model: config.model || 'gpt-4-vision-preview',
+    model: config.model || 'gpt-4o', // Updated from deprecated gpt-4-vision-preview
     temperature: config.temperature ?? 0.1,
     maxTokens: config.maxTokens || 4096,
     apiKey: apiKey,
